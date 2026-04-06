@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "Nand Dairy",
+    "slug": "nanddairy",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": false,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1E88E5"
+    },
+    "scheme": "nanddairy",
+    "android": {
+      "package": "com.nanddairy.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1E88E5"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.nanddairy.app",
+      "supportsTablet": false
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "@react-native-community/datetimepicker"
+    ],
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "67502f71-649f-4adb-aa8b-eeb3af89e1cc"
+      }
+    },
+    "owner": "kumar_ayush5612"
+  }
+}

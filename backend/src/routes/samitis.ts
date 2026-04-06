@@ -6,7 +6,8 @@ import { requireRole } from '../middleware/roleGuard';
 const router = express.Router();
 
 router.use(authenticateToken);
-// GET all samitis available to admin, milk-entry
+
+// GET all samitis — available to all authenticated roles
 router.get('/', async (req: AuthRequest, res: Response) => {
     try {
         const result = await pool.query(
@@ -20,11 +21,32 @@ router.get('/', async (req: AuthRequest, res: Response) => {
     }
 });
 
-// Admin only routes for managing samitis
+// GET single samiti by ID
+router.get('/:id', async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query(
+            `SELECT id, name, code_4digit, created_at FROM samitis WHERE id = $1`,
+            [id]
+        );
+        if (result.rows.length === 0) {
+            res.status(404).json({ error: 'Samiti not found.' });
+            return;
+        }
+        res.json(result.rows[0]);
+    } catch (error) {
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+// POST create samiti (Admin only)
 router.post('/', requireRole(['admin']), async (req: AuthRequest, res: Response) => {
     const { name } = req.body;
+    if (!name) {
+        res.status(400).json({ error: 'Samiti name is required.' });
+        return;
+    }
     try {
-        // Generate random 4 digit code for the samiti. Ensure we retry if collision.
         let code_4digit;
         let isUnique = false;
         while (!isUnique) {
@@ -47,3 +69,4 @@ router.post('/', requireRole(['admin']), async (req: AuthRequest, res: Response)
 });
 
 export default router;
+

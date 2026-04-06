@@ -6,6 +6,7 @@ import { requireRole } from '../middleware/roleGuard';
 const router = express.Router();
 
 router.use(authenticateToken);
+
 // GET all vehicles and their mapped samitis
 router.get('/', async (req: AuthRequest, res: Response) => {
     try {
@@ -21,8 +22,13 @@ router.get('/', async (req: AuthRequest, res: Response) => {
     }
 });
 
+// POST assign vehicle to samiti (Admin only)
 router.post('/', requireRole(['admin']), async (req: AuthRequest, res: Response) => {
     const { vehicle_number, samiti_id } = req.body;
+    if (!vehicle_number || !samiti_id) {
+        res.status(400).json({ error: 'vehicle_number and samiti_id are required.' });
+        return;
+    }
     try {
         const result = await pool.query(
             `INSERT INTO vehicles (vehicle_number, samiti_id) 
@@ -31,7 +37,7 @@ router.post('/', requireRole(['admin']), async (req: AuthRequest, res: Response)
         );
         res.status(201).json(result.rows[0]);
     } catch (error: any) {
-        if (error.code === '23505') { // unique violation
+        if (error.code === '23505') {
             res.status(400).json({ error: 'Vehicle number already exists.' });
         } else {
              res.status(500).json({ error: 'Database error' });
@@ -39,7 +45,22 @@ router.post('/', requireRole(['admin']), async (req: AuthRequest, res: Response)
     }
 });
 
-// For milk entry - GET samiti details based on vehicle number
+// DELETE vehicle mapping (Admin only)
+router.delete('/:id', requireRole(['admin']), async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query('DELETE FROM vehicles WHERE id = $1 RETURNING id', [id]);
+        if (result.rows.length === 0) {
+            res.status(404).json({ error: 'Vehicle not found.' });
+            return;
+        }
+        res.json({ message: 'Vehicle removed successfully.' });
+    } catch (error) {
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+// GET samiti details by vehicle number (for milk entry screen search)
 router.get('/search/:vehicle_number', requireRole(['admin', 'milk-entry']), async (req: AuthRequest, res: Response) => {
      try {
          const { vehicle_number } = req.params;
@@ -63,3 +84,4 @@ router.get('/search/:vehicle_number', requireRole(['admin', 'milk-entry']), asyn
 });
 
 export default router;
+

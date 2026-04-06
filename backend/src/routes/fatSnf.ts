@@ -11,7 +11,8 @@ router.use(authenticateToken);
 router.get('/pending', requireRole(['admin', 'fat-snf']), async (req: AuthRequest, res: Response) => {
     try {
         const result = await pool.query(
-            `SELECT m.id as milk_entry_id, m.shift, m.milk_quantity_liters, m.entry_date, s.name as samiti_name, s.code_4digit as samiti_code
+            `SELECT m.id as milk_entry_id, m.shift, m.milk_quantity_liters, m.entry_date,
+                    s.name as samiti_name, s.code_4digit as samiti_code
              FROM milk_entries m
              JOIN samitis s ON m.samiti_id = s.id
              LEFT JOIN fat_snf_entries f ON m.id = f.milk_entry_id
@@ -26,9 +27,22 @@ router.get('/pending', requireRole(['admin', 'fat-snf']), async (req: AuthReques
 
 router.post('/', requireRole(['admin', 'fat-snf']), async (req: AuthRequest, res: Response) => {
     const { milk_entry_id, fat_value, snf_value, rate_per_liter } = req.body;
+
+    // Validate ranges
+    if (fat_value < 0 || fat_value > 10) {
+        res.status(400).json({ error: 'Fat value must be between 0 and 10.' });
+        return;
+    }
+    if (snf_value < 0 || snf_value > 15) {
+        res.status(400).json({ error: 'SNF value must be between 0 and 15.' });
+        return;
+    }
+    if (rate_per_liter < 0) {
+        res.status(400).json({ error: 'Rate per liter cannot be negative.' });
+        return;
+    }
     
     try {
-        // Usually rate logic is dynamic based on FAT/SNF, assuming frontend or server sends generic calc
         const milkEntry = await pool.query('SELECT milk_quantity_liters FROM milk_entries WHERE id = $1', [milk_entry_id]);
         
         if (milkEntry.rows.length === 0) {
@@ -46,7 +60,7 @@ router.post('/', requireRole(['admin', 'fat-snf']), async (req: AuthRequest, res
         );
         res.status(201).json(result.rows[0]);
     } catch (error: any) {
-        if (error.code === '23505') { // unique violation for milk_entry_id
+        if (error.code === '23505') {
              res.status(400).json({ error: 'Fat/SNF already submitted for this milk entry.' });
         } else {
              res.status(500).json({ error: 'Database error' });
@@ -55,3 +69,4 @@ router.post('/', requireRole(['admin', 'fat-snf']), async (req: AuthRequest, res
 });
 
 export default router;
+

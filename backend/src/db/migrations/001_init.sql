@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS users (
     name VARCHAR(255) NOT NULL,
     mobile_number VARCHAR(15) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    role VARCHAR(50) NOT NULL CHECK (role IN ('admin', 'accountant', 'milk-entry', 'fat-snf', 'report')),
+    role VARCHAR(50) NOT NULL CHECK (role IN ('admin', 'milk-entry', 'fat-snf', 'report')),
     is_active BOOLEAN DEFAULT TRUE,
     created_by_admin INTEGER REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -32,8 +32,10 @@ CREATE TABLE IF NOT EXISTS milk_entries (
     entry_date DATE NOT NULL,
     milk_quantity_liters DECIMAL(10, 2) NOT NULL,
     entered_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (samiti_id, shift, entry_date)
 );
+
 
 CREATE TABLE IF NOT EXISTS fat_snf_entries (
     id SERIAL PRIMARY KEY,

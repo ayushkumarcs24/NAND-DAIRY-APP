@@ -1,0 +1,8 @@
+name: Local
+values:
+  - key: base_url
+    value: ''
+    enabled: true
+  - key: token
+    value: ''
+    enabled: true

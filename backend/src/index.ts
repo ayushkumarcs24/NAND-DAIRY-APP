@@ -8,19 +8,25 @@ import vehicleRoutes from './routes/vehicles';
 import milkEntryRoutes from './routes/milkEntries';
 import fatSnfRoutes from './routes/fatSnf';
 import reportRoutes from './routes/reports';
+import { pool } from './db/pool';
 
 dotenv.config();
 
 const app = express();
-const PORT = parseInt(process.env.PORT || '5000', 10);
+const PORT = parseInt(process.env.PORT || '5001', 10);
 
 // Enable CORS for all origins so mobile devices (Expo Go) can connect
 app.use(cors());
 app.use(express.json());
 
-// Main basic health check
-app.get('/api/health', (req: Request, res: Response) => {
-  res.json({ status: 'healthy', timestamp: new Date(), message: 'Nand Dairy API is running' });
+// Health check — also pings the database
+app.get('/api/health', async (req: Request, res: Response) => {
+  try {
+    await pool.query('SELECT 1');
+    res.json({ status: 'healthy', database: 'connected', timestamp: new Date() });
+  } catch {
+    res.status(500).json({ status: 'unhealthy', database: 'disconnected', timestamp: new Date() });
+  }
 });
 
 // App Routes
