@@ -1,51 +1,41 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native';
 import {
-  Text, Button, Card, Chip, ActivityIndicator,
-  SegmentedButtons, Divider, DataTable,
-} from 'react-native-paper';
+  View, Text, TouchableOpacity, ScrollView,
+  StyleSheet, RefreshControl, ActivityIndicator,
+} from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import api from '../../services/api';
-import { DairyTheme } from '../../constants/Theme';
+import { C } from '../../constants/Theme';
 
 interface Samiti { id: number; name: string; code_4digit: string; }
 interface DailyRow { samiti_name: string; samiti_code: string; total_milk: string; avg_fat: string; avg_snf: string; total_amount: string; }
 interface BillRow { date: string; milk: string; fat: string; snf: string; rate: string; amount: string; }
 
 const fmt = (n: string | number) => parseFloat(String(n) || '0').toFixed(2);
-const fmtDate = (iso: string) => {
-  try { return new Date(iso).toLocaleDateString('en-IN'); } catch { return iso; }
-};
+const fmtDate = (iso: string) => { try { return new Date(iso).toLocaleDateString('en-IN'); } catch { return iso; } };
+const toYMD = (d: Date) => d.toISOString().split('T')[0];
 
 export default function ReportScreen() {
   const [tab, setTab] = useState<'daily' | 'bill'>('daily');
-
-  // Daily report state
   const [dailyDate, setDailyDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [dailyData, setDailyData] = useState<DailyRow[]>([]);
   const [dailyLoading, setDailyLoading] = useState(false);
-
-  // Bill state
   const [samitis, setSamitis] = useState<Samiti[]>([]);
   const [selectedSamiti, setSelectedSamiti] = useState<number | null>(null);
-  const [fromDate, setFromDate] = useState(() => {
-    const d = new Date(); d.setDate(d.getDate() - 9); return d;
-  });
+  const [fromDate, setFromDate] = useState(() => { const d = new Date(); d.setDate(d.getDate() - 9); return d; });
   const [toDate, setToDate] = useState(new Date());
   const [billData, setBillData] = useState<BillRow[]>([]);
   const [billLoading, setBillLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-
-  const toYMD = (d: Date) => d.toISOString().split('T')[0];
 
   const fetchSamitis = useCallback(async () => {
     try {
       const res = await api.get('/samitis');
       setSamitis(res.data);
       if (res.data.length > 0) setSelectedSamiti(res.data[0].id);
-    } catch {}
+    } catch { }
   }, []);
 
   useEffect(() => { fetchSamitis(); }, [fetchSamitis]);
@@ -55,7 +45,7 @@ export default function ReportScreen() {
     try {
       const res = await api.get(`/reports/daily?date=${toYMD(dailyDate)}`);
       setDailyData(res.data);
-    } catch {} finally { setDailyLoading(false); setRefreshing(false); }
+    } catch { } finally { setDailyLoading(false); setRefreshing(false); }
   }, [dailyDate]);
 
   const fetchBill = useCallback(async () => {
@@ -64,7 +54,7 @@ export default function ReportScreen() {
     try {
       const res = await api.get(`/reports/bill?samiti_id=${selectedSamiti}&from_date=${toYMD(fromDate)}&to_date=${toYMD(toDate)}`);
       setBillData(res.data);
-    } catch {} finally { setBillLoading(false); setRefreshing(false); }
+    } catch { } finally { setBillLoading(false); setRefreshing(false); }
   }, [selectedSamiti, fromDate, toDate]);
 
   useEffect(() => { if (tab === 'daily') fetchDaily(); }, [tab, fetchDaily]);
@@ -76,79 +66,72 @@ export default function ReportScreen() {
   const billMilk = billData.reduce((s, r) => s + parseFloat(r.milk || '0'), 0);
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F5F9FC' }}>
-      <SegmentedButtons
-        value={tab}
-        onValueChange={v => setTab(v as any)}
-        buttons={[
-          { value: 'daily', label: '📋 Daily Summary' },
-          { value: 'bill', label: '🧾 10-Day Bill' },
-        ]}
-        style={styles.tabBar}
-      />
+    <View style={s.screen}>
+      {/* Tab selector */}
+      <View style={s.tabBar}>
+        {(['daily', 'bill'] as const).map(t => (
+          <TouchableOpacity key={t} style={[s.tabBtn, tab === t && s.tabBtnActive]} onPress={() => setTab(t)}>
+            <Text style={[s.tabText, tab === t && s.tabTextActive]}>
+              {t === 'daily' ? '📋 Daily Summary' : '🧾 10-Day Bill'}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
 
       {/* ── DAILY TAB ── */}
       {tab === 'daily' && (
-        <ScrollView
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchDaily(); }} />}
-        >
-          <View style={styles.dateRow}>
-            <Text variant="labelLarge">📅 Date:</Text>
-            <Button onPress={() => setShowDatePicker(true)} mode="outlined" compact style={{ marginLeft: 8 }}>
-              {toYMD(dailyDate)}
-            </Button>
-            <Button onPress={fetchDaily} mode="contained" compact style={{ marginLeft: 'auto' }}>Load</Button>
+        <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchDaily(); }} tintColor={C.primary} />}>
+          <View style={s.dateRow}>
+            <Text style={s.dateRowLabel}>📅 Date:</Text>
+            <TouchableOpacity style={s.dateBtn} onPress={() => setShowDatePicker(true)}>
+              <Text style={s.dateBtnText}>{toYMD(dailyDate)}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={s.loadBtn} onPress={fetchDaily}>
+              <Text style={s.loadBtnText}>Load</Text>
+            </TouchableOpacity>
           </View>
           {showDatePicker && (
             <DateTimePicker
-              value={dailyDate}
-              mode="date"
-              display="default"
+              value={dailyDate} mode="date" display="default"
               onChange={(_, d) => { setShowDatePicker(false); if (d) setDailyDate(d); }}
             />
           )}
 
-          {dailyLoading ? <ActivityIndicator style={{ marginTop: 40 }} color={DairyTheme.colors.primary} /> : (
+          {dailyLoading ? <ActivityIndicator color={C.primary} style={{ marginTop: 40 }} /> : (
             <>
-              <DataTable>
-                <DataTable.Header style={styles.tableHeader}>
-                  <DataTable.Title style={{ flex: 2 }}>Samiti</DataTable.Title>
-                  <DataTable.Title numeric>Milk(L)</DataTable.Title>
-                  <DataTable.Title numeric>FAT</DataTable.Title>
-                  <DataTable.Title numeric>SNF</DataTable.Title>
-                  <DataTable.Title numeric>₹</DataTable.Title>
-                </DataTable.Header>
-
+              {/* Table */}
+              <View style={s.tableCard}>
+                {/* Header */}
+                <View style={[s.tableRow, s.tableHeader]}>
+                  <Text style={[s.tableCell, s.headerCell, { flex: 2 }]}>Samiti</Text>
+                  <Text style={[s.tableCell, s.headerCell, s.numCell]}>Milk(L)</Text>
+                  <Text style={[s.tableCell, s.headerCell, s.numCell]}>FAT</Text>
+                  <Text style={[s.tableCell, s.headerCell, s.numCell]}>SNF</Text>
+                  <Text style={[s.tableCell, s.headerCell, s.numCell]}>₹</Text>
+                </View>
                 {dailyData.map((r, i) => (
-                  <DataTable.Row key={i} style={i % 2 === 0 ? styles.rowEven : undefined}>
-                    <DataTable.Cell style={{ flex: 2 }}>
-                      <View>
-                        <Text variant="bodySmall" style={{ fontWeight: 'bold' }}>{r.samiti_name}</Text>
-                        <Text variant="bodySmall" style={{ color: DairyTheme.colors.primary }}>{r.samiti_code}</Text>
-                      </View>
-                    </DataTable.Cell>
-                    <DataTable.Cell numeric>{fmt(r.total_milk)}</DataTable.Cell>
-                    <DataTable.Cell numeric>{fmt(r.avg_fat)}%</DataTable.Cell>
-                    <DataTable.Cell numeric>{fmt(r.avg_snf)}%</DataTable.Cell>
-                    <DataTable.Cell numeric>{fmt(r.total_amount)}</DataTable.Cell>
-                  </DataTable.Row>
+                  <View key={i} style={[s.tableRow, i % 2 === 0 ? s.rowEven : s.rowOdd]}>
+                    <View style={[s.tableCell, { flex: 2 }]}>
+                      <Text style={s.cellText}>{r.samiti_name}</Text>
+                      <Text style={{ color: C.primary, fontSize: 11 }}>{r.samiti_code}</Text>
+                    </View>
+                    <Text style={[s.tableCell, s.numCell, s.cellText]}>{fmt(r.total_milk)}</Text>
+                    <Text style={[s.tableCell, s.numCell, s.cellText]}>{fmt(r.avg_fat)}%</Text>
+                    <Text style={[s.tableCell, s.numCell, s.cellText]}>{fmt(r.avg_snf)}%</Text>
+                    <Text style={[s.tableCell, s.numCell, s.cellText]}>{fmt(r.total_amount)}</Text>
+                  </View>
                 ))}
-              </DataTable>
-
-              {dailyData.length === 0 && (
-                <Text style={styles.empty}>No data for this date.</Text>
-              )}
+                {dailyData.length === 0 && <Text style={s.empty}>No data for this date.</Text>}
+              </View>
 
               {dailyData.length > 0 && (
-                <Card style={styles.totalCard}>
-                  <Card.Content style={styles.totalRow}>
-                    <Text variant="titleMedium" style={{ fontWeight: 'bold' }}>Grand Total</Text>
-                    <View style={{ alignItems: 'flex-end' }}>
-                      <Text variant="bodyMedium">🥛 {totalMilk.toFixed(2)} L</Text>
-                      <Text variant="titleLarge" style={{ color: '#2E7D32', fontWeight: 'bold' }}>₹{totalAmount.toFixed(2)}</Text>
-                    </View>
-                  </Card.Content>
-                </Card>
+                <View style={s.totalCard}>
+                  <Text style={s.totalLabel}>Grand Total</Text>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={s.totalMilk}>🥛 {totalMilk.toFixed(2)} L</Text>
+                    <Text style={s.totalAmount}>₹{totalAmount.toFixed(2)}</Text>
+                  </View>
+                </View>
               )}
             </>
           )}
@@ -157,66 +140,65 @@ export default function ReportScreen() {
 
       {/* ── BILL TAB ── */}
       {tab === 'bill' && (
-        <ScrollView
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchBill(); }} />}
-        >
-          <View style={styles.billControls}>
-            <Text variant="labelLarge" style={{ marginBottom: 4 }}>Select Samiti</Text>
-            <View style={styles.pickerWrapper}>
-              <Picker selectedValue={selectedSamiti} onValueChange={v => setSelectedSamiti(v)}>
-                {samitis.map(s => <Picker.Item key={s.id} label={`${s.name} (${s.code_4digit})`} value={s.id} />)}
+        <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchBill(); }} tintColor={C.primary} />}>
+          <View style={s.billControls}>
+            <Text style={s.billControlLabel}>Select Samiti</Text>
+            <View style={s.pickerWrap}>
+              <Picker selectedValue={selectedSamiti} onValueChange={v => setSelectedSamiti(v)} dropdownIconColor={C.textSec} style={{ color: '#fff' }}>
+                {samitis.map(sm => <Picker.Item key={sm.id} label={`${sm.name} (${sm.code_4digit})`} value={sm.id} />)}
               </Picker>
             </View>
-
-            <View style={styles.dateRow}>
+            <View style={s.dateRow}>
               <View style={{ flex: 1 }}>
-                <Text variant="labelSmall">From</Text>
-                <Button mode="outlined" compact onPress={() => setShowDatePicker(true)}>{toYMD(fromDate)}</Button>
+                <Text style={s.dateRowLabel}>From</Text>
+                <TouchableOpacity style={s.dateBtn} onPress={() => setShowDatePicker(true)}>
+                  <Text style={s.dateBtnText}>{toYMD(fromDate)}</Text>
+                </TouchableOpacity>
               </View>
               <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text variant="labelSmall">To</Text>
-                <Button mode="outlined" compact onPress={() => setShowDatePicker(true)}>{toYMD(toDate)}</Button>
+                <Text style={s.dateRowLabel}>To</Text>
+                <TouchableOpacity style={s.dateBtn} onPress={() => setShowDatePicker(true)}>
+                  <Text style={s.dateBtnText}>{toYMD(toDate)}</Text>
+                </TouchableOpacity>
               </View>
-              <Button mode="contained" onPress={fetchBill} style={{ alignSelf: 'flex-end', marginLeft: 8 }}>Load</Button>
+              <TouchableOpacity style={[s.loadBtn, { alignSelf: 'flex-end', marginLeft: 8 }]} onPress={fetchBill}>
+                <Text style={s.loadBtnText}>Load</Text>
+              </TouchableOpacity>
             </View>
           </View>
 
-          <Divider />
+          <View style={s.divider} />
 
-          {billLoading ? <ActivityIndicator style={{ marginTop: 40 }} color={DairyTheme.colors.primary} /> : (
+          {billLoading ? <ActivityIndicator color={C.primary} style={{ marginTop: 40 }} /> : (
             <>
-              <DataTable>
-                <DataTable.Header style={styles.tableHeader}>
-                  <DataTable.Title>Date</DataTable.Title>
-                  <DataTable.Title numeric>Milk</DataTable.Title>
-                  <DataTable.Title numeric>FAT</DataTable.Title>
-                  <DataTable.Title numeric>SNF</DataTable.Title>
-                  <DataTable.Title numeric>₹</DataTable.Title>
-                </DataTable.Header>
-
+              <View style={s.tableCard}>
+                <View style={[s.tableRow, s.tableHeader]}>
+                  <Text style={[s.tableCell, s.headerCell]}>Date</Text>
+                  <Text style={[s.tableCell, s.headerCell, s.numCell]}>Milk</Text>
+                  <Text style={[s.tableCell, s.headerCell, s.numCell]}>FAT</Text>
+                  <Text style={[s.tableCell, s.headerCell, s.numCell]}>SNF</Text>
+                  <Text style={[s.tableCell, s.headerCell, s.numCell]}>₹</Text>
+                </View>
                 {billData.map((r, i) => (
-                  <DataTable.Row key={i} style={i % 2 === 0 ? styles.rowEven : undefined}>
-                    <DataTable.Cell>{fmtDate(r.date)}</DataTable.Cell>
-                    <DataTable.Cell numeric>{fmt(r.milk)}L</DataTable.Cell>
-                    <DataTable.Cell numeric>{fmt(r.fat)}%</DataTable.Cell>
-                    <DataTable.Cell numeric>{fmt(r.snf)}%</DataTable.Cell>
-                    <DataTable.Cell numeric>₹{fmt(r.amount)}</DataTable.Cell>
-                  </DataTable.Row>
+                  <View key={i} style={[s.tableRow, i % 2 === 0 ? s.rowEven : s.rowOdd]}>
+                    <Text style={[s.tableCell, s.cellText]}>{fmtDate(r.date)}</Text>
+                    <Text style={[s.tableCell, s.numCell, s.cellText]}>{fmt(r.milk)}L</Text>
+                    <Text style={[s.tableCell, s.numCell, s.cellText]}>{fmt(r.fat)}%</Text>
+                    <Text style={[s.tableCell, s.numCell, s.cellText]}>{fmt(r.snf)}%</Text>
+                    <Text style={[s.tableCell, s.numCell, s.cellText]}>₹{fmt(r.amount)}</Text>
+                  </View>
                 ))}
-              </DataTable>
-
-              {billData.length === 0 && <Text style={styles.empty}>No data for this range.</Text>}
+                {billData.length === 0 && <Text style={s.empty}>No data for this range.</Text>}
+              </View>
 
               {billData.length > 0 && (
-                <Card style={styles.totalCard}>
-                  <Card.Content style={styles.totalRow}>
-                    <Text variant="titleMedium" style={{ fontWeight: 'bold' }}>Bill Total</Text>
-                    <View style={{ alignItems: 'flex-end' }}>
-                      <Text variant="bodyMedium">🥛 {billMilk.toFixed(2)} L</Text>
-                      <Text variant="titleLarge" style={{ color: '#2E7D32', fontWeight: 'bold' }}>₹{billTotal.toFixed(2)}</Text>
-                    </View>
-                  </Card.Content>
-                </Card>
+                <View style={s.totalCard}>
+                  <Text style={s.totalLabel}>Bill Total</Text>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={s.totalMilk}>🥛 {billMilk.toFixed(2)} L</Text>
+                    <Text style={s.totalAmount}>₹{billTotal.toFixed(2)}</Text>
+                  </View>
+                </View>
               )}
             </>
           )}
@@ -226,14 +208,35 @@ export default function ReportScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  tabBar: { margin: 12 },
-  dateRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8 },
-  tableHeader: { backgroundColor: '#E3F2FD' },
-  rowEven: { backgroundColor: '#FAFAFA' },
-  totalCard: { margin: 12, borderRadius: 12, backgroundColor: '#E8F5E9' },
-  totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  empty: { textAlign: 'center', color: '#aaa', marginTop: 40 },
-  billControls: { padding: 12 },
-  pickerWrapper: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, marginBottom: 12 },
+const s = StyleSheet.create({
+  screen:           { flex: 1, backgroundColor: C.bg },
+  tabBar:           { flexDirection: 'row', gap: 3, margin: 12, backgroundColor: C.surfaceVar, borderRadius: 12, padding: 4 },
+  tabBtn:           { flex: 1, paddingVertical: 9, borderRadius: 9, alignItems: 'center' },
+  tabBtnActive:     { backgroundColor: C.primary },
+  tabText:          { color: C.textSec, fontSize: 13, fontWeight: '500' },
+  tabTextActive:    { color: '#fff', fontWeight: '600' },
+  dateRow:          { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8, gap: 8 },
+  dateRowLabel:     { color: C.textSec, fontSize: 13 },
+  dateBtn:          { backgroundColor: C.surfaceVar, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7 },
+  dateBtnText:      { color: '#fff', fontSize: 13 },
+  loadBtn:          { backgroundColor: C.primary, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 7 },
+  loadBtnText:      { color: '#fff', fontWeight: '600', fontSize: 13 },
+  tableCard:        { marginHorizontal: 16, backgroundColor: C.surface, borderRadius: 16, overflow: 'hidden', marginBottom: 12 },
+  tableRow:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10 },
+  tableHeader:      { backgroundColor: '#0e0e0e' },
+  rowEven:          { backgroundColor: C.surface },
+  rowOdd:           { backgroundColor: '#1a1a1a' },
+  tableCell:        { flex: 1 },
+  headerCell:       { color: C.textSec, fontSize: 12, fontWeight: '600' },
+  numCell:          { textAlign: 'right' },
+  cellText:         { color: '#fff', fontSize: 13 },
+  empty:            { textAlign: 'center', color: C.textSec, padding: 24, fontSize: 14 },
+  totalCard:        { marginHorizontal: 16, marginBottom: 24, backgroundColor: '#0d1f0d', borderRadius: 16, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  totalLabel:       { color: '#fff', fontSize: 16, fontWeight: '700' },
+  totalMilk:        { color: C.textSec, fontSize: 13, marginBottom: 4 },
+  totalAmount:      { color: C.success, fontSize: 22, fontWeight: '700', letterSpacing: -0.3 },
+  billControls:     { padding: 16 },
+  billControlLabel: { color: C.textSec, fontSize: 12, marginBottom: 6 },
+  pickerWrap:       { backgroundColor: C.surfaceVar, borderRadius: 10, marginBottom: 12, overflow: 'hidden' },
+  divider:          { height: 1, backgroundColor: C.surfaceVar, marginHorizontal: 16, marginBottom: 12 },
 });

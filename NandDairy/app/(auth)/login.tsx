@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
-import { TextInput, Button, Text, Surface, HelperText } from 'react-native-paper';
+import {
+  View, StyleSheet, KeyboardAvoidingView,
+  Platform, Text, TextInput, TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
 import axios from 'axios';
 import { API_URL } from '../../constants/ApiHelper';
 import { useAuth } from '../../context/AuthContext';
-import { DairyTheme } from '../../constants/Theme';
+import { C } from '../../constants/Theme';
 
 export default function LoginScreen() {
   const [mobileNumber, setMobileNumber] = useState('');
   const [password, setPassword] = useState('');
+  const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
   const { signIn } = useAuth();
 
   const handleLogin = async () => {
@@ -19,26 +22,20 @@ export default function LoginScreen() {
       setError('Both fields are required.');
       return;
     }
-
     try {
       setLoading(true);
       setError('');
-      
       const response = await axios.post(`${API_URL}/auth/login`, {
         mobile_number: mobileNumber,
-        password: password,
+        password,
       });
-
       const { token, user } = response.data;
-      
-      // Save it into secure context allowing the RootLayout router switch to kick in
       await signIn(token, user.role);
-
     } catch (err: any) {
-      if (err.response && err.response.data && err.response.data.error) {
+      if (err.response?.data?.error) {
         setError(err.response.data.error);
       } else {
-        setError('Network error. Please make sure the server is healthy.');
+        setError('Network error. Please make sure the server is running.');
       }
     } finally {
       setLoading(false);
@@ -46,87 +43,95 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container}
+    <KeyboardAvoidingView
+      style={s.screen}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Surface style={styles.card} elevation={2}>
-        <View style={styles.headerContainer}>
-          <Text variant="displaySmall" style={styles.title}>Nand Dairy</Text>
-          <Text variant="titleMedium" style={styles.subtitle}>Sign in to your account</Text>
+      {/* Logo area */}
+      <View style={s.logoArea}>
+        <Text style={s.logoEmoji}>🥛</Text>
+        <Text style={s.logoTitle}>Nand Dairy</Text>
+        <Text style={s.logoSub}>Dairy Management</Text>
+      </View>
+
+      {/* Card */}
+      <View style={s.card}>
+        <Text style={s.cardTitle}>Sign In</Text>
+
+        <Text style={s.label}>Mobile Number</Text>
+        <View style={s.inputWrap}>
+          <Text style={s.inputIcon}>📱</Text>
+          <TextInput
+            style={s.input}
+            value={mobileNumber}
+            onChangeText={setMobileNumber}
+            keyboardType="numeric"
+            maxLength={10}
+            placeholder="10-digit mobile"
+            placeholderTextColor={C.textTer}
+            autoCapitalize="none"
+          />
         </View>
 
-        <TextInput
-          label="Mobile Number"
-          mode="outlined"
-          value={mobileNumber}
-          onChangeText={setMobileNumber}
-          keyboardType="numeric"
-          style={styles.input}
-          maxLength={10}
-          autoCapitalize="none"
-        />
+        <Text style={s.label}>Password</Text>
+        <View style={s.inputWrap}>
+          <Text style={s.inputIcon}>🔒</Text>
+          <TextInput
+            style={[s.input, { flex: 1 }]}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPass}
+            placeholder="Password"
+            placeholderTextColor={C.textTer}
+            autoCapitalize="none"
+          />
+          <TouchableOpacity onPress={() => setShowPass(v => !v)} style={s.eyeBtn}>
+            <Text style={{ color: C.textSec, fontSize: 16 }}>{showPass ? '🙈' : '👁️'}</Text>
+          </TouchableOpacity>
+        </View>
 
-        <TextInput
-          label="Password"
-          mode="outlined"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          style={styles.input}
-          autoCapitalize="none"
-        />
+        {!!error && <Text style={s.errorText}>{error}</Text>}
 
-        {!!error && (
-            <HelperText type="error" visible={!!error} style={{ marginHorizontal: -10 }}>
-              {error}
-            </HelperText>
-        )}
-
-        <Button 
-          mode="contained" 
+        <TouchableOpacity
+          style={[s.button, loading && { opacity: 0.7 }]}
           onPress={handleLogin}
-          loading={loading}
           disabled={loading}
-          style={styles.button}
+          activeOpacity={0.85}
         >
-          Login
-        </Button>
-      </Surface>
+          {loading
+            ? <ActivityIndicator color="#fff" size="small" />
+            : <Text style={s.buttonText}>Login</Text>
+          }
+        </TouchableOpacity>
+      </View>
+
+      <Text style={s.version}>v1.0</Text>
     </KeyboardAvoidingView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: DairyTheme.colors.primary,
-    justifyContent: 'center',
-    padding: 20,
+const s = StyleSheet.create({
+  screen:     { flex: 1, backgroundColor: '#000', justifyContent: 'center', padding: 24 },
+  logoArea:   { alignItems: 'center', marginBottom: 40 },
+  logoEmoji:  { fontSize: 48, marginBottom: 8 },
+  logoTitle:  { fontSize: 32, fontWeight: '700', color: '#fff', letterSpacing: -0.5 },
+  logoSub:    { fontSize: 14, color: C.textSec, marginTop: 4, letterSpacing: 0.2 },
+  card:       { backgroundColor: '#1c1c1e', borderRadius: 20, padding: 24 },
+  cardTitle:  { fontSize: 22, fontWeight: '600', color: '#fff', marginBottom: 20, letterSpacing: -0.3 },
+  label:      { fontSize: 12, color: C.textSec, marginBottom: 6, letterSpacing: 0.1 },
+  inputWrap:  {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: C.surfaceVar, borderRadius: 10,
+    paddingHorizontal: 12, marginBottom: 16, height: 48,
   },
-  card: {
-    padding: 24,
-    borderRadius: 16,
-    backgroundColor: '#ffffff',
+  inputIcon:  { fontSize: 16, marginRight: 8 },
+  input:      { flex: 1, color: '#fff', fontSize: 15, letterSpacing: -0.2 },
+  eyeBtn:     { padding: 4 },
+  errorText:  { color: C.error, fontSize: 13, marginBottom: 12, letterSpacing: -0.1 },
+  button:     {
+    backgroundColor: C.primary, borderRadius: 10,
+    height: 48, justifyContent: 'center', alignItems: 'center', marginTop: 4,
   },
-  headerContainer: {
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  title: {
-    fontWeight: 'bold',
-    color: DairyTheme.colors.primary,
-  },
-  subtitle: {
-    color: '#666',
-    marginTop: 4,
-  },
-  input: {
-    marginBottom: 16,
-    backgroundColor: '#fff'
-  },
-  button: {
-    marginTop: 8,
-    paddingVertical: 6,
-  }
+  buttonText: { color: '#fff', fontSize: 15, fontWeight: '600', letterSpacing: -0.2 },
+  version:    { color: C.textTer, fontSize: 12, textAlign: 'center', marginTop: 32 },
 });

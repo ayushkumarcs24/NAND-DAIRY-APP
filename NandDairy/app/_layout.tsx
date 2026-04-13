@@ -1,7 +1,7 @@
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { PaperProvider } from 'react-native-paper';
 import { AuthProvider, useAuth } from '../context/AuthContext';
-import { DairyTheme } from '../constants/Theme';
+import { DairyTheme, C } from '../constants/Theme';
 import { useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 
@@ -36,8 +36,8 @@ const InitialLayout = () => {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color={DairyTheme.colors.primary} />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#131313' }}>
+        <ActivityIndicator size="large" color={C.primary} />
       </View>
     );
   }

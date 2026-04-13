@@ -1,7 +1,7 @@
 import { Stack } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
-import { Button } from 'react-native-paper';
-import { DairyTheme } from '../../constants/Theme';
+import { TouchableOpacity, Text } from 'react-native';
+import { C } from '../../constants/Theme';
 
 export default function ReportLayout() {
   const { signOut } = useAuth();
@@ -11,9 +11,14 @@ export default function ReportLayout() {
         name="index"
         options={{
           title: 'Reports',
-          headerStyle: { backgroundColor: DairyTheme.colors.primary },
+          headerStyle: { backgroundColor: '#000' },
           headerTintColor: '#fff',
-          headerRight: () => <Button textColor="#fff" onPress={signOut}>Logout</Button>,
+          headerTitleStyle: { fontWeight: '600', letterSpacing: -0.3 },
+          headerRight: () => (
+            <TouchableOpacity onPress={signOut} style={{ marginRight: 4 }}>
+              <Text style={{ color: C.primary, fontSize: 15, fontWeight: '500' }}>Logout</Text>
+            </TouchableOpacity>
+          ),
         }}
       />
     </Stack>

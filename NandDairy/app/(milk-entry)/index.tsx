@@ -1,19 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  View, FlatList, StyleSheet, KeyboardAvoidingView,
-  Platform, RefreshControl,
+  View, Text, TextInput, TouchableOpacity, FlatList,
+  StyleSheet, KeyboardAvoidingView, Platform, RefreshControl, ActivityIndicator,
 } from 'react-native';
-import {
-  Text, TextInput, Button, Card, Chip, Snackbar,
-  SegmentedButtons, ActivityIndicator, Divider,
-} from 'react-native-paper';
+import { Snackbar } from 'react-native-paper';
 import api from '../../services/api';
-import { DairyTheme } from '../../constants/Theme';
+import { C } from '../../constants/Theme';
 
 interface SamitiResult { samiti_id: number; samiti_name: string; code_4digit: string; }
 interface MilkEntry { id: number; samiti_name: string; code_4digit: string; shift: string; milk_quantity_liters: string; created_at: string; }
 
 const today = new Date().toISOString().split('T')[0];
+const todayDisplay = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
 export default function MilkEntryScreen() {
   const [shift, setShift] = useState<'morning' | 'evening'>('morning');
@@ -39,39 +37,27 @@ export default function MilkEntryScreen() {
 
   const handleSearch = async () => {
     if (!vehicleNumber.trim()) { setSnackError(true); setSnackMsg('Enter a vehicle number'); return; }
-    setSearching(true);
-    setSamiti(null);
+    setSearching(true); setSamiti(null);
     try {
       const res = await api.get(`/vehicles/search/${vehicleNumber.trim().toUpperCase()}`);
       setSamiti(res.data);
     } catch {
-      setSnackError(true);
-      setSnackMsg('Vehicle not found. Check the number or ask admin to assign it.');
+      setSnackError(true); setSnackMsg('Vehicle not found.');
     } finally { setSearching(false); }
   };
 
   const handleSubmit = async () => {
-    if (!samiti || !quantity) { setSnackError(true); setSnackMsg('Search for vehicle and enter quantity'); return; }
+    if (!samiti || !quantity) { setSnackError(true); setSnackMsg('Search vehicle and enter quantity'); return; }
     const qty = parseFloat(quantity);
     if (isNaN(qty) || qty <= 0) { setSnackError(true); setSnackMsg('Enter a valid quantity'); return; }
-
     setSubmitting(true);
     try {
-      await api.post('/milk-entries', {
-        samiti_id: samiti.samiti_id,
-        shift,
-        entry_date: today,
-        milk_quantity_liters: qty,
-      });
-      setSnackError(false);
-      setSnackMsg(`✅ Entry saved — ${samiti.samiti_name}, ${qty}L ${shift}`);
-      setSamiti(null);
-      setVehicleNumber('');
-      setQuantity('');
+      await api.post('/milk-entries', { samiti_id: samiti.samiti_id, shift, entry_date: today, milk_quantity_liters: qty });
+      setSnackError(false); setSnackMsg(`✅ Saved — ${samiti.samiti_name}, ${qty}L`);
+      setSamiti(null); setVehicleNumber(''); setQuantity('');
       fetchEntries();
     } catch (e: any) {
-      setSnackError(true);
-      setSnackMsg(e.response?.data?.error || 'Failed to submit entry');
+      setSnackError(true); setSnackMsg(e.response?.data?.error || 'Failed to submit');
     } finally { setSubmitting(false); }
   };
 
@@ -81,136 +67,147 @@ export default function MilkEntryScreen() {
   };
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={styles.container}>
-        {/* Date & Shift Toggle */}
-        <View style={styles.topBar}>
-          <Text variant="labelLarge" style={styles.dateText}>📅 {today}</Text>
-          <SegmentedButtons
-            value={shift}
-            onValueChange={v => { setShift(v as any); fetchEntries(v); }}
-            buttons={[
-              { value: 'morning', label: '🌅 Morning' },
-              { value: 'evening', label: '🌆 Evening' },
-            ]}
-            style={{ flex: 1 }}
-          />
-        </View>
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: C.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
 
-        {/* Vehicle Search */}
-        <View style={styles.searchRow}>
+      {/* Shift Toggle */}
+      <View style={s.shiftRow}>
+        <Text style={s.dateLabel}>📅 {todayDisplay}</Text>
+        <View style={s.segmented}>
+          {(['morning', 'evening'] as const).map(sh => (
+            <TouchableOpacity
+              key={sh}
+              style={[s.segTab, shift === sh && s.segTabActive]}
+              onPress={() => { setShift(sh); fetchEntries(sh); }}
+            >
+              <Text style={[s.segText, shift === sh && s.segTextActive]}>
+                {sh === 'morning' ? '🌅 Morning' : '🌆 Evening'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      {/* Search */}
+      <View style={s.searchCard}>
+        <View style={s.searchRow}>
           <TextInput
-            label="Vehicle Number"
-            mode="outlined"
+            style={s.searchInput}
             value={vehicleNumber}
             onChangeText={setVehicleNumber}
-            style={{ flex: 1, backgroundColor: '#fff' }}
+            placeholder="Vehicle Number (e.g. MH04AB1234)"
+            placeholderTextColor={C.textTer}
             autoCapitalize="characters"
-            right={<TextInput.Icon icon="magnify" onPress={handleSearch} />}
             onSubmitEditing={handleSearch}
           />
-          <Button
-            mode="contained"
-            onPress={handleSearch}
-            loading={searching}
-            style={styles.searchBtn}
-          >
-            Search
-          </Button>
+          <TouchableOpacity style={[s.searchBtn, searching && { opacity: 0.7 }]} onPress={handleSearch} disabled={searching}>
+            {searching ? <ActivityIndicator color="#fff" size="small" /> : <Text style={s.searchBtnText}>Search</Text>}
+          </TouchableOpacity>
         </View>
+      </View>
 
-        {/* Samiti Result Card */}
-        {samiti && (
-          <Card style={styles.samitiCard}>
-            <Card.Content style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <View>
-                <Text variant="titleLarge" style={{ fontWeight: 'bold' }}>{samiti.samiti_name}</Text>
-                <Text variant="bodySmall" style={{ color: '#888' }}>Samiti found ✓</Text>
-              </View>
-              <Chip
-                style={{ backgroundColor: DairyTheme.colors.primary }}
-                textStyle={{ color: '#fff', fontSize: 22, fontWeight: 'bold', letterSpacing: 3 }}
-              >
-                {samiti.code_4digit}
-              </Chip>
-            </Card.Content>
-            <Divider />
-            <Card.Content style={{ paddingTop: 12 }}>
-              <TextInput
-                label="Milk Quantity (Liters)"
-                mode="outlined"
-                value={quantity}
-                onChangeText={setQuantity}
-                keyboardType="decimal-pad"
-                style={{ backgroundColor: '#fff' }}
-                right={<TextInput.Affix text="L" />}
-              />
-              <Button
-                mode="contained"
-                onPress={handleSubmit}
-                loading={submitting}
-                disabled={submitting}
-                style={{ marginTop: 12, paddingVertical: 4 }}
-                icon="check-circle"
-              >
-                Submit Entry
-              </Button>
-            </Card.Content>
-          </Card>
-        )}
+      {/* Samiti Result */}
+      {samiti && (
+        <View style={s.samitiCard}>
+          <View style={s.samitiTop}>
+            <View>
+              <Text style={s.samitiName}>{samiti.samiti_name}</Text>
+              <Text style={s.samitiFound}>✓ Samiti found</Text>
+            </View>
+            <View style={s.codeBadge}><Text style={s.codeText}>{samiti.code_4digit}</Text></View>
+          </View>
+          <View style={s.tonalLine} />
+          <Text style={s.inputLabel}>Milk Quantity (Liters)</Text>
+          <View style={s.qtyRow}>
+            <TextInput
+              style={[s.searchInput, { flex: 1 }]}
+              value={quantity}
+              onChangeText={setQuantity}
+              keyboardType="decimal-pad"
+              placeholder="0.0"
+              placeholderTextColor={C.textTer}
+            />
+            <View style={s.unitBadge}><Text style={s.unitText}>L</Text></View>
+          </View>
+          <TouchableOpacity style={[s.submitBtn, submitting && { opacity: 0.7 }]} onPress={handleSubmit} disabled={submitting}>
+            {submitting ? <ActivityIndicator color="#fff" size="small" /> : <Text style={s.submitBtnText}>✓  Submit Entry</Text>}
+          </TouchableOpacity>
+        </View>
+      )}
 
-        {/* Today's Entries */}
-        <Text variant="titleSmall" style={styles.listHeader}>
-          Today's Entries ({entries.length})
-        </Text>
+      {/* Today's Entries */}
+      <View style={s.entriesHeader}>
+        <Text style={s.entriesTitle}>Today's Entries</Text>
+        <View style={s.countBadge}><Text style={s.countText}>{entries.length}</Text></View>
+      </View>
 
-        {loadingEntries ? <ActivityIndicator style={{ marginTop: 20 }} color={DairyTheme.colors.primary} /> : (
+      {loadingEntries
+        ? <ActivityIndicator color={C.primary} style={{ marginTop: 20 }} />
+        : (
           <FlatList
             data={entries}
             keyExtractor={item => String(item.id)}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchEntries(); }} />}
+            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchEntries(); }} tintColor={C.primary} />}
             renderItem={({ item }) => (
-              <Card style={styles.entryCard}>
-                <Card.Content style={styles.entryRow}>
-                  <View style={{ flex: 1 }}>
-                    <Text variant="titleSmall" style={{ fontWeight: 'bold' }}>{item.samiti_name}</Text>
-                    <Text variant="bodySmall" style={{ color: '#888' }}>{formatTime(item.created_at)}</Text>
-                  </View>
-                  <Chip compact style={{ backgroundColor: '#E3F2FD' }} textStyle={{ color: '#1976D2' }}>
-                    {item.code_4digit}
-                  </Chip>
-                  <Text variant="titleMedium" style={{ marginLeft: 12, fontWeight: 'bold', color: DairyTheme.colors.primary }}>
-                    {parseFloat(item.milk_quantity_liters).toFixed(1)}L
-                  </Text>
-                </Card.Content>
-              </Card>
+              <View style={s.entryCard}>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.entryName}>{item.samiti_name}</Text>
+                  <Text style={s.entryTime}>{formatTime(item.created_at)}</Text>
+                </View>
+                <View style={s.entryCodeChip}><Text style={s.entryCode}>{item.code_4digit}</Text></View>
+                <Text style={s.entryQty}>{parseFloat(item.milk_quantity_liters).toFixed(1)}L</Text>
+              </View>
             )}
-            ListEmptyComponent={<Text style={styles.empty}>No entries for this shift yet.</Text>}
+            ListEmptyComponent={<Text style={s.empty}>No entries for this shift yet.</Text>}
           />
-        )}
-      </View>
+        )
+      }
 
       <Snackbar
-        visible={!!snackMsg}
-        onDismiss={() => setSnackMsg('')}
-        duration={3500}
-        style={{ backgroundColor: snackError ? '#B71C1C' : '#1B5E20' }}
+        visible={!!snackMsg} onDismiss={() => setSnackMsg('')} duration={3500}
+        style={{ backgroundColor: snackError ? '#3a1212' : '#0d2a0d', margin: 16, borderRadius: 12 }}
       >
-        {snackMsg}
+        <Text style={{ color: snackError ? C.error : C.success }}>{snackMsg}</Text>
       </Snackbar>
     </KeyboardAvoidingView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F9FC', padding: 12 },
-  topBar: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
-  dateText: { color: '#555', marginRight: 8 },
-  searchRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  searchBtn: { alignSelf: 'flex-end', paddingHorizontal: 4 },
-  samitiCard: { marginBottom: 12, borderRadius: 12, backgroundColor: '#fff', elevation: 3 },
-  listHeader: { color: '#555', marginBottom: 8, fontWeight: 'bold' },
-  entryCard: { marginBottom: 8, borderRadius: 10, backgroundColor: '#fff' },
-  entryRow: { flexDirection: 'row', alignItems: 'center' },
-  empty: { textAlign: 'center', color: '#aaa', marginTop: 40 },
+const s = StyleSheet.create({
+  shiftRow:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 10, backgroundColor: C.bg },
+  dateLabel:     { color: C.textSec, fontSize: 13 },
+  segmented:     { flex: 1, flexDirection: 'row', backgroundColor: C.surfaceVar, borderRadius: 10, padding: 3, gap: 3 },
+  segTab:        { flex: 1, paddingVertical: 7, borderRadius: 8, alignItems: 'center' },
+  segTabActive:  { backgroundColor: C.primary },
+  segText:       { color: C.textSec, fontSize: 13, fontWeight: '500' },
+  segTextActive: { color: '#fff' },
+  searchCard:    { marginHorizontal: 16, backgroundColor: C.surface, borderRadius: 16, padding: 16, marginBottom: 12 },
+  searchRow:     { flexDirection: 'row', gap: 10 },
+  searchInput:   { flex: 1, backgroundColor: C.surfaceVar, borderRadius: 10, color: '#fff', paddingHorizontal: 14, height: 44, fontSize: 14 },
+  searchBtn:     { backgroundColor: C.primary, borderRadius: 10, paddingHorizontal: 16, justifyContent: 'center' },
+  searchBtnText: { color: '#fff', fontWeight: '600', fontSize: 14 },
+  samitiCard:    { marginHorizontal: 16, backgroundColor: C.surface, borderRadius: 16, padding: 16, marginBottom: 12 },
+  samitiTop:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
+  samitiName:    { color: '#fff', fontSize: 17, fontWeight: '600', letterSpacing: -0.2 },
+  samitiFound:   { color: C.success, fontSize: 12, marginTop: 3 },
+  codeBadge:     { backgroundColor: C.primary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 },
+  codeText:      { color: '#fff', fontWeight: '700', fontSize: 20, letterSpacing: 2 },
+  tonalLine:     { height: 1, backgroundColor: C.surfaceVar, marginBottom: 14 },
+  inputLabel:    { color: C.textSec, fontSize: 12, marginBottom: 6 },
+  qtyRow:        { flexDirection: 'row', gap: 8, marginBottom: 14 },
+  unitBadge:     { backgroundColor: C.surfaceVar, borderRadius: 10, paddingHorizontal: 14, justifyContent: 'center' },
+  unitText:      { color: C.textSec, fontSize: 15, fontWeight: '600' },
+  submitBtn:     { backgroundColor: C.primary, borderRadius: 10, height: 46, justifyContent: 'center', alignItems: 'center' },
+  submitBtnText: { color: '#fff', fontSize: 15, fontWeight: '600', letterSpacing: -0.2 },
+  entriesHeader: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 10, gap: 8 },
+  entriesTitle:  { color: '#fff', fontSize: 16, fontWeight: '700', letterSpacing: -0.2 },
+  countBadge:    { backgroundColor: C.surfaceVar, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 },
+  countText:     { color: '#fff', fontSize: 12, fontWeight: '600' },
+  entryCard:     { backgroundColor: C.surface, borderRadius: 12, padding: 14, marginBottom: 10, flexDirection: 'row', alignItems: 'center' },
+  entryName:     { color: '#fff', fontSize: 14, fontWeight: '600' },
+  entryTime:     { color: C.textSec, fontSize: 12, marginTop: 2 },
+  entryCodeChip: { backgroundColor: '#1c2a3a', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, marginHorizontal: 10 },
+  entryCode:     { color: '#7AB8F5', fontSize: 13, fontWeight: '700' },
+  entryQty:      { color: C.primary, fontSize: 16, fontWeight: '700', letterSpacing: -0.2 },
+  empty:         { textAlign: 'center', color: C.textSec, marginTop: 40, fontSize: 14 },
 });

@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, FlatList, StyleSheet, RefreshControl } from 'react-native';
 import {
-  Text, FAB, Modal, Portal, TextInput, Button,
-  Card, Switch, Chip, Snackbar, ActivityIndicator, SegmentedButtons,
-} from 'react-native-paper';
+  View, FlatList, StyleSheet, RefreshControl,
+  Text, TextInput, TouchableOpacity, Modal,
+  ActivityIndicator, Switch, Alert,
+} from 'react-native';
+import { Snackbar } from 'react-native-paper';
 import api from '../../services/api';
-import { DairyTheme } from '../../constants/Theme';
+import { C } from '../../constants/Theme';
 
 interface User {
   id: number; name: string; mobile_number: string;
@@ -19,6 +20,16 @@ const ROLES = [
   { value: 'admin', label: 'Admin' },
 ];
 
+const ROLE_COLORS: Record<string, string> = {
+  admin: '#FF3B30', 'milk-entry': C.primary, 'fat-snf': C.success, report: '#BF5AF2',
+};
+
+const AVATAR_COLORS = ['#0071e3', '#5856D6', '#34C759', '#FF9500', '#FF3B30', '#BF5AF2'];
+
+function initials(name: string) {
+  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+}
+
 export default function AccountantsScreen() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,13 +37,14 @@ export default function AccountantsScreen() {
   const [visible, setVisible] = useState(false);
   const [saving, setSaving] = useState(false);
   const [snackMsg, setSnackMsg] = useState('');
+  const [snackErr, setSnackErr] = useState(false);
   const [form, setForm] = useState({ name: '', mobile_number: '', password: '', role: 'milk-entry' });
 
   const fetchUsers = useCallback(async () => {
     try {
       const res = await api.get('/users');
       setUsers(res.data);
-    } catch { setSnackMsg('Failed to load accountants'); }
+    } catch { setSnackErr(true); setSnackMsg('Failed to load accountants'); }
     finally { setLoading(false); setRefreshing(false); }
   }, []);
 
@@ -40,17 +52,17 @@ export default function AccountantsScreen() {
 
   const handleAdd = async () => {
     if (!form.name || !form.mobile_number || !form.password) {
-      setSnackMsg('All fields are required'); return;
+      setSnackErr(true); setSnackMsg('All fields are required'); return;
     }
     try {
       setSaving(true);
       await api.post('/users', form);
       setVisible(false);
       setForm({ name: '', mobile_number: '', password: '', role: 'milk-entry' });
-      setSnackMsg('Accountant added successfully!');
+      setSnackErr(false); setSnackMsg('Accountant added!');
       fetchUsers();
     } catch (e: any) {
-      setSnackMsg(e.response?.data?.error || 'Failed to add accountant');
+      setSnackErr(true); setSnackMsg(e.response?.data?.error || 'Failed to add accountant');
     } finally { setSaving(false); }
   };
 
@@ -58,77 +70,132 @@ export default function AccountantsScreen() {
     try {
       await api.patch(`/users/${id}/toggle-active`, { is_active: !current });
       setUsers(prev => prev.map(u => u.id === id ? { ...u, is_active: !current } : u));
-    } catch { setSnackMsg('Failed to update status'); }
-  };
-
-  const roleColor: Record<string, string> = {
-    admin: '#D32F2F', 'milk-entry': '#1976D2', 'fat-snf': '#388E3C', report: '#7B1FA2',
+    } catch { setSnackErr(true); setSnackMsg('Failed to update status'); }
   };
 
   if (loading) return (
-    <View style={styles.center}><ActivityIndicator size="large" color={DairyTheme.colors.primary} /></View>
+    <View style={s.center}><ActivityIndicator size="large" color={C.primary} /></View>
   );
 
   return (
-    <View style={styles.container}>
+    <View style={s.screen}>
       <FlatList
         data={users}
         keyExtractor={item => String(item.id)}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchUsers(); }} />}
-        contentContainerStyle={{ padding: 12 }}
-        renderItem={({ item }) => (
-          <Card style={styles.card}>
-            <Card.Content style={styles.cardRow}>
-              <View style={{ flex: 1 }}>
-                <Text variant="titleMedium" style={{ fontWeight: 'bold' }}>{item.name}</Text>
-                <Text variant="bodySmall" style={{ color: '#666' }}>📱 {item.mobile_number}</Text>
-                <Chip
-                  compact
-                  style={{ backgroundColor: roleColor[item.role] || '#999', marginTop: 6, alignSelf: 'flex-start' }}
-                  textStyle={{ color: '#fff', fontSize: 11 }}
-                >
-                  {item.role}
-                </Chip>
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchUsers(); }} tintColor={C.primary} />}
+        contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+        ListHeaderComponent={
+          <View style={s.listHeader}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Text style={s.listTitle}>Accountants</Text>
+              <View style={s.countBadge}><Text style={s.countText}>{users.length}</Text></View>
+            </View>
+            <TouchableOpacity style={s.addBtn} onPress={() => setVisible(true)}>
+              <Text style={s.addBtnText}>+</Text>
+            </TouchableOpacity>
+          </View>
+        }
+        renderItem={({ item, index }) => (
+          <View style={s.card}>
+            <View style={[s.avatar, { backgroundColor: AVATAR_COLORS[index % AVATAR_COLORS.length] }]}>
+              <Text style={s.avatarText}>{initials(item.name)}</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.userName}>{item.name}</Text>
+              <Text style={s.userMobile}>📱 {item.mobile_number}</Text>
+              <View style={[s.rolePill, { backgroundColor: ROLE_COLORS[item.role] + '22' }]}>
+                <Text style={[s.roleText, { color: ROLE_COLORS[item.role] }]}>{item.role}</Text>
               </View>
-              <Switch value={item.is_active} onValueChange={() => toggleActive(item.id, item.is_active)} color={DairyTheme.colors.primary} />
-            </Card.Content>
-          </Card>
+            </View>
+            <Switch
+              value={item.is_active}
+              onValueChange={() => toggleActive(item.id, item.is_active)}
+              trackColor={{ false: '#333', true: C.primary + '80' }}
+              thumbColor={item.is_active ? C.primary : '#555'}
+            />
+          </View>
         )}
-        ListEmptyComponent={<Text style={styles.empty}>No accountants yet. Tap + to add one.</Text>}
+        ListEmptyComponent={<Text style={s.empty}>No accountants yet. Tap + to add one.</Text>}
       />
 
-      <Portal>
-        <Modal visible={visible} onDismiss={() => setVisible(false)} contentContainerStyle={styles.modal}>
-          <Text variant="titleLarge" style={styles.modalTitle}>Add Accountant</Text>
-          <TextInput label="Full Name" mode="outlined" value={form.name} onChangeText={t => setForm(p => ({ ...p, name: t }))} style={styles.input} />
-          <TextInput label="Mobile Number" mode="outlined" value={form.mobile_number} onChangeText={t => setForm(p => ({ ...p, mobile_number: t }))} keyboardType="numeric" maxLength={10} style={styles.input} />
-          <TextInput label="Password" mode="outlined" value={form.password} onChangeText={t => setForm(p => ({ ...p, password: t }))} secureTextEntry style={styles.input} />
-          <Text variant="labelLarge" style={{ marginBottom: 8 }}>Role</Text>
-          <SegmentedButtons
-            value={form.role}
-            onValueChange={v => setForm(p => ({ ...p, role: v }))}
-            buttons={ROLES.map(r => ({ value: r.value, label: r.label }))}
-            style={{ marginBottom: 16 }}
-          />
-          <Button mode="contained" onPress={handleAdd} loading={saving} disabled={saving}>Add Accountant</Button>
-          <Button onPress={() => setVisible(false)} style={{ marginTop: 8 }}>Cancel</Button>
-        </Modal>
-      </Portal>
+      {/* Add Modal */}
+      <Modal visible={visible} animationType="slide" transparent onRequestClose={() => setVisible(false)}>
+        <View style={s.modalOverlay}>
+          <View style={s.modalCard}>
+            <Text style={s.modalTitle}>Add Accountant</Text>
 
-      <FAB icon="plus" style={styles.fab} onPress={() => setVisible(true)} color="#fff" />
-      <Snackbar visible={!!snackMsg} onDismiss={() => setSnackMsg('')} duration={3000}>{snackMsg}</Snackbar>
+            <Text style={s.inputLabel}>Full Name</Text>
+            <TextInput style={s.inputField} value={form.name} onChangeText={t => setForm(p => ({ ...p, name: t }))} placeholder="Ramesh Kumar" placeholderTextColor={C.textTer} />
+
+            <Text style={s.inputLabel}>Mobile Number</Text>
+            <TextInput style={s.inputField} value={form.mobile_number} onChangeText={t => setForm(p => ({ ...p, mobile_number: t }))} keyboardType="numeric" maxLength={10} placeholder="10-digit number" placeholderTextColor={C.textTer} />
+
+            <Text style={s.inputLabel}>Password</Text>
+            <TextInput style={s.inputField} value={form.password} onChangeText={t => setForm(p => ({ ...p, password: t }))} secureTextEntry placeholder="Set password" placeholderTextColor={C.textTer} />
+
+            <Text style={s.inputLabel}>Role</Text>
+            <View style={s.roleGrid}>
+              {ROLES.map(r => (
+                <TouchableOpacity
+                  key={r.value}
+                  style={[s.roleChip, form.role === r.value && s.roleChipActive]}
+                  onPress={() => setForm(p => ({ ...p, role: r.value }))}
+                >
+                  <Text style={[s.roleChipText, form.role === r.value && s.roleChipTextActive]}>{r.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TouchableOpacity style={[s.primaryBtn, saving && { opacity: 0.7 }]} onPress={handleAdd} disabled={saving}>
+              {saving ? <ActivityIndicator color="#fff" size="small" /> : <Text style={s.primaryBtnText}>Add Accountant</Text>}
+            </TouchableOpacity>
+            <TouchableOpacity style={s.ghostBtn} onPress={() => setVisible(false)}>
+              <Text style={s.ghostBtnText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Snackbar
+        visible={!!snackMsg} onDismiss={() => setSnackMsg('')} duration={3000}
+        style={{ backgroundColor: snackErr ? '#3a1212' : '#0d2a0d', margin: 16, borderRadius: 12 }}
+      >
+        <Text style={{ color: snackErr ? C.error : C.success }}>{snackMsg}</Text>
+      </Snackbar>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F9FC' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  card: { marginBottom: 10, borderRadius: 12, backgroundColor: '#fff' },
-  cardRow: { flexDirection: 'row', alignItems: 'center' },
-  empty: { textAlign: 'center', color: '#999', marginTop: 60 },
-  fab: { position: 'absolute', right: 16, bottom: 24, backgroundColor: DairyTheme.colors.primary },
-  modal: { backgroundColor: '#fff', margin: 20, padding: 24, borderRadius: 16 },
-  modalTitle: { fontWeight: 'bold', marginBottom: 16 },
-  input: { marginBottom: 14, backgroundColor: '#fff' },
+const s = StyleSheet.create({
+  screen:        { flex: 1, backgroundColor: C.bg },
+  center:        { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: C.bg },
+  listHeader:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
+  listTitle:     { fontSize: 22, fontWeight: '700', color: '#fff', letterSpacing: -0.3 },
+  countBadge:    { backgroundColor: C.surfaceVar, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 },
+  countText:     { color: '#fff', fontSize: 12, fontWeight: '600' },
+  addBtn:        { backgroundColor: C.primary, width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
+  addBtnText:    { color: '#fff', fontSize: 22, fontWeight: '300', lineHeight: 26 },
+  card:          { backgroundColor: C.surface, borderRadius: 16, padding: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 14 },
+  avatar:        { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
+  avatarText:    { color: '#fff', fontWeight: '700', fontSize: 15, letterSpacing: -0.2 },
+  userName:      { color: '#fff', fontSize: 15, fontWeight: '600', letterSpacing: -0.2 },
+  userMobile:    { color: C.textSec, fontSize: 12, marginTop: 2 },
+  rolePill:      { alignSelf: 'flex-start', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, marginTop: 6 },
+  roleText:      { fontSize: 11, fontWeight: '600', letterSpacing: 0.1 },
+  empty:         { textAlign: 'center', color: C.textSec, marginTop: 80, fontSize: 15 },
+  // Modal
+  modalOverlay:  { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
+  modalCard:     { backgroundColor: '#1c1c1e', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 },
+  modalTitle:    { color: '#fff', fontSize: 20, fontWeight: '700', marginBottom: 20, letterSpacing: -0.3 },
+  inputLabel:    { color: C.textSec, fontSize: 12, marginBottom: 6, letterSpacing: 0.1 },
+  inputField:    { backgroundColor: C.surfaceVar, borderRadius: 10, color: '#fff', fontSize: 15, paddingHorizontal: 14, height: 46, marginBottom: 14 },
+  roleGrid:      { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
+  roleChip:      { paddingHorizontal: 14, paddingVertical: 8, backgroundColor: C.surfaceVar, borderRadius: 10 },
+  roleChipActive:{ backgroundColor: C.primary },
+  roleChipText:  { color: C.textSec, fontSize: 13, fontWeight: '500' },
+  roleChipTextActive: { color: '#fff' },
+  primaryBtn:    { backgroundColor: C.primary, borderRadius: 10, height: 48, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
+  primaryBtnText:{ color: '#fff', fontSize: 15, fontWeight: '600', letterSpacing: -0.2 },
+  ghostBtn:      { height: 44, justifyContent: 'center', alignItems: 'center' },
+  ghostBtnText:  { color: C.primary, fontSize: 15, fontWeight: '500' },
 });

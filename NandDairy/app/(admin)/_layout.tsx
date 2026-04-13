@@ -1,8 +1,8 @@
 import { Tabs } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { DairyTheme } from '../../constants/Theme';
-import { Button } from 'react-native-paper';
+import { C } from '../../constants/Theme';
+import { TouchableOpacity, Text } from 'react-native';
 
 export default function AdminLayout() {
   const { signOut } = useAuth();
@@ -10,13 +10,21 @@ export default function AdminLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: DairyTheme.colors.primary,
-        tabBarInactiveTintColor: '#999',
-        tabBarStyle: { backgroundColor: '#fff', borderTopColor: '#e0e0e0' },
-        headerStyle: { backgroundColor: DairyTheme.colors.primary },
+        tabBarActiveTintColor: C.primary,
+        tabBarInactiveTintColor: '#666',
+        tabBarStyle: {
+          backgroundColor: 'rgba(19,19,19,0.92)',
+          borderTopWidth: 0,
+          elevation: 0,
+        },
+        tabBarLabelStyle: { fontSize: 11, letterSpacing: -0.1 },
+        headerStyle: { backgroundColor: '#000' },
         headerTintColor: '#fff',
+        headerTitleStyle: { fontWeight: '600', letterSpacing: -0.3 },
         headerRight: () => (
-          <Button textColor="#fff" onPress={signOut}>Logout</Button>
+          <TouchableOpacity onPress={signOut} style={{ marginRight: 16 }}>
+            <Text style={{ color: C.primary, fontSize: 15, fontWeight: '500' }}>Logout</Text>
+          </TouchableOpacity>
         ),
       }}
     >
