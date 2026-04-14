@@ -1,0 +1,6 @@
+$kind: http-request
+url: "{{baseUrl}}/api/orders"
+method: GET
+headers:
+  Authorization: Bearer {{distToken}}
+order: 3000

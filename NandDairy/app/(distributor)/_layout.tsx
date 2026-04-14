@@ -4,7 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { C } from '../../constants/Theme';
 import { TouchableOpacity, Text } from 'react-native';
 
-export default function AdminLayout() {
+export default function DistributorLayout() {
   const { signOut } = useAuth();
 
   return (
@@ -18,7 +18,7 @@ export default function AdminLayout() {
           elevation: 0,
         },
         tabBarLabelStyle: { fontSize: 11, letterSpacing: -0.1 },
-        headerStyle: { backgroundColor: '#000' },
+        headerStyle: { backgroundColor: '#131313', shadowColor: 'transparent', elevation: 0 },
         headerTintColor: '#fff',
         headerTitleStyle: { fontWeight: '600', letterSpacing: -0.3 },
         headerRight: () => (
@@ -29,47 +29,20 @@ export default function AdminLayout() {
       }}
     >
       <Tabs.Screen
-        name="accountants"
+        name="index"
         options={{
-          title: 'Accountants',
+          title: 'Shop',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="account-group" size={size} color={color} />
+            <MaterialCommunityIcons name="store" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="samitis"
+        name="orders"
         options={{
-          title: 'Samitis',
+          title: 'My Orders',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="office-building" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="vehicles"
-        options={{
-          title: 'Vehicles',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="truck" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="products"
-        options={{
-          title: 'Products',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="bottle-tonic" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="distributor-orders"
-        options={{
-          title: 'Orders',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="currency-inr" size={size} color={color} />
+            <MaterialCommunityIcons name="receipt" size={size} color={color} />
           ),
         }}
       />

@@ -8,6 +8,8 @@ import vehicleRoutes from './routes/vehicles';
 import milkEntryRoutes from './routes/milkEntries';
 import fatSnfRoutes from './routes/fatSnf';
 import reportRoutes from './routes/reports';
+import productRoutes from './routes/products';
+import orderRoutes from './routes/orders';
 import { pool } from './db/pool';
 
 dotenv.config();
@@ -37,6 +39,8 @@ app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/milk-entries', milkEntryRoutes);
 app.use('/api/fat-snf', fatSnfRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/orders', orderRoutes);
 
 // Start Express server on 0.0.0.0 for LAN access
 app.listen(PORT, '0.0.0.0', () => {

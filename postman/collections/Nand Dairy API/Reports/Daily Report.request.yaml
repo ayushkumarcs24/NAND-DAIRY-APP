@@ -1,0 +1,13 @@
+$kind: http-request
+name: Daily Report
+url: "{{base_url}}/api/reports/daily"
+method: GET
+params:
+  - key: date
+    value: "2026-04-14"
+    enabled: true
+auth:
+  type: bearer
+  credentials:
+    token: "{{token}}"
+order: 1775330200001

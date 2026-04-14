@@ -1,7 +1,7 @@
 name: Local
 values:
   - key: base_url
-    value: ''
+    value: 'http://192.168.235.3:5001'
     enabled: true
   - key: token
     value: ''

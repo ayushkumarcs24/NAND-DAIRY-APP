@@ -6,8 +6,8 @@ const getBaseUrl = () => {
   }
   
   if (__DEV__) {
-      // Both Android (physical) and iOS use the laptop's local IP on the same WiFi
-      return 'http://10.210.2.64:5001/api';
+      // Both Android (physical) and iOS use the laptop's local IP on the same network
+      return 'http://192.168.235.3:5001/api';
   }
   
   return 'https://your-production-url.render.com/api'; // Replace later with Render URL

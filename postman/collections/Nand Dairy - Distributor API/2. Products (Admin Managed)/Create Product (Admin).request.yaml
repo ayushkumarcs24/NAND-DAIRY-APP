@@ -1,0 +1,24 @@
+$kind: http-request
+url: "{{baseUrl}}/api/products"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{adminToken}}
+body:
+  type: text
+  content: |-
+    {
+      "name": "Premium Pasteurized Milk",
+      "description": "Fresh from the farm",
+      "price": "60.00",
+      "unit": "liter"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      const response = pm.response.json();
+      if (response.id) {
+          pm.collectionVariables.set("productId", response.id);
+      }
+    language: text/javascript
+order: 1000

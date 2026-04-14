@@ -4,6 +4,7 @@ import {
   StyleSheet, KeyboardAvoidingView, Platform, RefreshControl, ActivityIndicator,
 } from 'react-native';
 import { Snackbar } from 'react-native-paper';
+import { Picker } from '@react-native-picker/picker';
 import api from '../../services/api';
 import { C } from '../../constants/Theme';
 
@@ -17,7 +18,8 @@ export default function MilkEntryScreen() {
   const [shift, setShift] = useState<'morning' | 'evening'>('morning');
   const [vehicleNumber, setVehicleNumber] = useState('');
   const [searching, setSearching] = useState(false);
-  const [samiti, setSamiti] = useState<SamitiResult | null>(null);
+  const [samitiList, setSamitiList] = useState<SamitiResult[]>([]);   // all samitis for the vehicle
+  const [samiti, setSamiti] = useState<SamitiResult | null>(null);    // the selected one
   const [quantity, setQuantity] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [entries, setEntries] = useState<MilkEntry[]>([]);
@@ -37,10 +39,16 @@ export default function MilkEntryScreen() {
 
   const handleSearch = async () => {
     if (!vehicleNumber.trim()) { setSnackError(true); setSnackMsg('Enter a vehicle number'); return; }
-    setSearching(true); setSamiti(null);
+    setSearching(true); setSamiti(null); setSamitiList([]);
     try {
+      // API now returns an array of samitis mapped to this vehicle
       const res = await api.get(`/vehicles/search/${vehicleNumber.trim().toUpperCase()}`);
-      setSamiti(res.data);
+      const list: SamitiResult[] = res.data;
+      setSamitiList(list);
+      // Auto-select if only one samiti, otherwise let user pick
+      if (list.length === 1) setSamiti(list[0]);
+      else if (list.length > 1) setSamiti(list[0]); // default to first
+      else { setSnackError(true); setSnackMsg('No samitis assigned to this vehicle.'); }
     } catch {
       setSnackError(true); setSnackMsg('Vehicle not found.');
     } finally { setSearching(false); }
@@ -106,15 +114,42 @@ export default function MilkEntryScreen() {
       </View>
 
       {/* Samiti Result */}
-      {samiti && (
+      {samitiList.length > 0 && samiti && (
         <View style={s.samitiCard}>
           <View style={s.samitiTop}>
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={s.samitiName}>{samiti.samiti_name}</Text>
               <Text style={s.samitiFound}>✓ Samiti found</Text>
             </View>
             <View style={s.codeBadge}><Text style={s.codeText}>{samiti.code_4digit}</Text></View>
           </View>
+
+          {/* Samiti picker — only shown when vehicle has multiple samitis */}
+          {samitiList.length > 1 && (
+            <>
+              <Text style={s.inputLabel}>Select Samiti</Text>
+              <View style={s.pickerWrap}>
+                <Picker
+                  selectedValue={samiti.samiti_id}
+                  onValueChange={val => {
+                    const found = samitiList.find(sm => sm.samiti_id === val);
+                    if (found) setSamiti(found);
+                  }}
+                  dropdownIconColor={C.textSec}
+                  style={{ color: '#fff' }}
+                >
+                  {samitiList.map(sm => (
+                    <Picker.Item
+                      key={sm.samiti_id}
+                      label={`${sm.samiti_name} (${sm.code_4digit})`}
+                      value={sm.samiti_id}
+                    />
+                  ))}
+                </Picker>
+              </View>
+            </>
+          )}
+
           <View style={s.tonalLine} />
           <Text style={s.inputLabel}>Milk Quantity (Liters)</Text>
           <View style={s.qtyRow}>
@@ -188,6 +223,7 @@ const s = StyleSheet.create({
   searchBtnText: { color: '#fff', fontWeight: '600', fontSize: 14 },
   samitiCard:    { marginHorizontal: 16, backgroundColor: C.surface, borderRadius: 16, padding: 16, marginBottom: 12 },
   samitiTop:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
+  pickerWrap:    { backgroundColor: C.surfaceVar, borderRadius: 10, marginBottom: 12, overflow: 'hidden' },
   samitiName:    { color: '#fff', fontSize: 17, fontWeight: '600', letterSpacing: -0.2 },
   samitiFound:   { color: C.success, fontSize: 12, marginTop: 3 },
   codeBadge:     { backgroundColor: C.primary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 },

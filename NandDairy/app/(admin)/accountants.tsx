@@ -5,6 +5,7 @@ import {
   ActivityIndicator, Switch, Alert,
 } from 'react-native';
 import { Snackbar } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { C } from '../../constants/Theme';
 
@@ -17,11 +18,12 @@ const ROLES = [
   { value: 'milk-entry', label: 'Milk Entry' },
   { value: 'fat-snf', label: 'Fat/SNF' },
   { value: 'report', label: 'Report' },
+  { value: 'distributor', label: 'Distributor' },
   { value: 'admin', label: 'Admin' },
 ];
 
 const ROLE_COLORS: Record<string, string> = {
-  admin: '#FF3B30', 'milk-entry': C.primary, 'fat-snf': C.success, report: '#BF5AF2',
+  admin: '#FF3B30', 'milk-entry': C.primary, 'fat-snf': C.success, report: '#BF5AF2', distributor: '#FF9500'
 };
 
 const AVATAR_COLORS = ['#0071e3', '#5856D6', '#34C759', '#FF9500', '#FF3B30', '#BF5AF2'];
@@ -73,6 +75,33 @@ export default function AccountantsScreen() {
     } catch { setSnackErr(true); setSnackMsg('Failed to update status'); }
   };
 
+  const handleDelete = (id: number, name: string) => {
+    Alert.alert(
+      'Delete Accountant',
+      `Are you sure you want to completely delete ${name}? This action cannot be undone and will permanently remove them from the system.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Permanently',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await api.delete(`/users/${id}`);
+              setSnackErr(false);
+              setSnackMsg('User successfully deleted');
+              fetchUsers();
+            } catch {
+              setLoading(false);
+              setSnackErr(true);
+              setSnackMsg('Failed to delete user');
+            }
+          }
+        }
+      ]
+    );
+  };
+
   if (loading) return (
     <View style={s.center}><ActivityIndicator size="large" color={C.primary} /></View>
   );
@@ -107,12 +136,17 @@ export default function AccountantsScreen() {
                 <Text style={[s.roleText, { color: ROLE_COLORS[item.role] }]}>{item.role}</Text>
               </View>
             </View>
-            <Switch
-              value={item.is_active}
-              onValueChange={() => toggleActive(item.id, item.is_active)}
-              trackColor={{ false: '#333', true: C.primary + '80' }}
-              thumbColor={item.is_active ? C.primary : '#555'}
-            />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <Switch
+                value={item.is_active}
+                onValueChange={() => toggleActive(item.id, item.is_active)}
+                trackColor={{ false: '#333', true: C.primary + '80' }}
+                thumbColor={item.is_active ? C.primary : '#555'}
+              />
+              <TouchableOpacity onPress={() => handleDelete(item.id, item.name)} style={{ padding: 4 }}>
+                <MaterialCommunityIcons name="delete-outline" size={24} color={C.error} />
+              </TouchableOpacity>
+            </View>
           </View>
         )}
         ListEmptyComponent={<Text style={s.empty}>No accountants yet. Tap + to add one.</Text>}

@@ -2,6 +2,10 @@
 workspace:
   id: 9d1bb261-704d-419f-81e5-80c36f198c94
 
+cloudResources:
+  collections:
+    ../postman/collections/Nand Dairy - Distributor API: d6630b78-b4f6-44ec-a443-380acf0a5817
+
 # All resources in the `postman/` folder are automatically registered in Local View.
 # Point to additional files outside the `postman/` folder to register them individually. Example:
 #localResources:

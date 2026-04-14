@@ -28,6 +28,8 @@ const InitialLayout = () => {
          router.replace('/(fat-snf)');
       } else if (userRole === 'report') {
          router.replace('/(report)');
+      } else if (userRole === 'distributor') {
+         router.replace('/(distributor)');
       } else {
          router.replace('/(auth)/login'); // Fallback
       }

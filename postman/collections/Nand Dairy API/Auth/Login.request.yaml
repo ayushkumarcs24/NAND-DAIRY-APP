@@ -13,4 +13,10 @@ auth:
   type: bearer
   credentials:
     token: "{{token}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      let res = pm.response.json();
+      pm.environment.set("token", res.token);
+    language: text/javascript
 order: 1775327013461

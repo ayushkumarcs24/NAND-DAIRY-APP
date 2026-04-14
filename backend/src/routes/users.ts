@@ -113,5 +113,22 @@ router.patch('/:id/toggle-active', async (req: AuthRequest, res: Response) => {
     }
 });
 
-export default router;
+// DELETE user entirely from DB
+router.delete('/:id', async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query(
+            'DELETE FROM users WHERE id = $1 RETURNING id',
+            [id]
+        );
+        if (result.rows.length === 0) {
+            res.status(404).json({ error: 'User not found.' });
+            return;
+        }
+        res.json({ message: 'User and cascade-related data successfully deleted.' });
+    } catch (error) {
+        res.status(500).json({ error: 'Database error while deleting user' });
+    }
+});
 
+export default router;

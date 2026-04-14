@@ -1,15 +1,15 @@
 $kind: http-request
-name: Create Vehicle
-url: "{{base_url}}/api/vehicles"
+name: Add Samiti to Vehicle
+url: "{{base_url}}/api/vehicles/1/samitis"
 method: POST
 body:
   type: json
   content: |-
     {
-      "vehicle_number": "RJ-14-XY-1234"
+      "samiti_id": 1
     }
 auth:
   type: bearer
   credentials:
     token: "{{token}}"
-order: 1775330042373
+order: 1775330042374

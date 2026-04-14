@@ -1,0 +1,8 @@
+$kind: collection
+description: API collection for the new Distributor role, Products, and Orders.
+variables:
+  baseUrl: http://localhost:5001
+  adminToken: ""
+  distToken: ""
+  productId: ""
+  orderId: ""

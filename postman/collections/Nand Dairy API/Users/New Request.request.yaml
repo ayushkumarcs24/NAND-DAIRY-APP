@@ -1,6 +1,6 @@
 $kind: http-request
-name: New Request
-url: http://localhost:5001/api/users
+name: Create User (Admin only)
+url: "{{base_url}}/api/users"
 method: POST
 body:
   type: json
@@ -11,4 +11,8 @@ body:
       "password": "password123",
       "role": "milk-entry"
     }
+auth:
+  type: bearer
+  credentials:
+    token: "{{token}}"
 order: 1775327673671
