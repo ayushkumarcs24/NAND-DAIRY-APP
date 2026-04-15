@@ -1,7 +1,7 @@
 $kind: collection
 description: API collection for the new Distributor role, Products, and Orders.
 variables:
-  baseUrl: http://localhost:5001
+  baseUrl: https://nand-dairy-backend.onrender.com
   adminToken: ""
   distToken: ""
   productId: ""

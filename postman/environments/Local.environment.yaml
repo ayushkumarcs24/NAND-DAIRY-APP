@@ -1,7 +1,7 @@
 name: Local
 values:
   - key: base_url
-    value: 'http://192.168.235.3:5001'
+    value: 'https://nand-dairy-backend.onrender.com'
     enabled: true
   - key: token
     value: ''

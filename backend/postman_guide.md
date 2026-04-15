@@ -1,5 +1,5 @@
 # Nand Dairy API — Complete Postman Testing Guide
-Base URL: `http://localhost:5001`
+Base URL: `https://nand-dairy-backend.onrender.com`
 
 > **Setup**: After logging in, copy the `token` value. In Postman, go to **Authorization** tab → **Bearer Token** → paste token. Do this for all requests below.
 

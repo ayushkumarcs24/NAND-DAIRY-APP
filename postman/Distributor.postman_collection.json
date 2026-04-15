@@ -243,7 +243,7 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:5001"
+      "value": "https://nand-dairy-backend.onrender.com"
     },
     {
       "key": "adminToken",
