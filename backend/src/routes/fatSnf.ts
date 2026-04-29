@@ -25,6 +25,28 @@ router.get('/pending', requireRole(['admin', 'fat-snf']), async (req: AuthReques
     }
 });
 
+// Gets history of tested entries for a specific date
+router.get('/history', requireRole(['admin', 'fat-snf']), async (req: AuthRequest, res: Response) => {
+    try {
+        const { date } = req.query;
+        const targetDate = date ? String(date) : new Date().toISOString().split('T')[0];
+        const result = await pool.query(
+            `SELECT m.id as milk_entry_id, m.shift, m.milk_quantity_liters, m.entry_date,
+                    s.name as samiti_name, s.code_4digit as samiti_code,
+                    f.fat_value, f.snf_value, f.rate_per_liter, f.total_amount, f.created_at as tested_at
+             FROM milk_entries m
+             JOIN samitis s ON m.samiti_id = s.id
+             JOIN fat_snf_entries f ON m.id = f.milk_entry_id
+             WHERE m.entry_date = $1
+             ORDER BY f.created_at DESC`,
+            [targetDate]
+        );
+        res.json(result.rows);
+    } catch (error) {
+         res.status(500).json({ error: 'Database error' });
+    }
+});
+
 router.post('/', requireRole(['admin', 'fat-snf']), async (req: AuthRequest, res: Response) => {
     const { milk_entry_id, fat_value, snf_value, rate_per_liter } = req.body;
 

@@ -5,6 +5,8 @@ import {
 } from 'react-native';
 import { Snackbar } from 'react-native-paper';
 import { Picker } from '@react-native-picker/picker';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import { C } from '../../constants/Theme';
 
@@ -15,6 +17,7 @@ const today        = new Date().toISOString().split('T')[0];
 const todayDisplay = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
 
 export default function MilkEntryScreen() {
+  const { user, signOut } = useAuth();
   const [shift, setShift]                   = useState<'morning' | 'evening'>('morning');
   const [vehicleNumber, setVehicleNumber]   = useState('');
   const [searching, setSearching]           = useState(false);
@@ -75,9 +78,9 @@ export default function MilkEntryScreen() {
     <KeyboardAvoidingView style={s.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
 
       {/* ── Top bar ── */}
-      <View style={s.topBar}>
-        <View>
-          <Text style={s.topDate}>{todayDisplay}</Text>
+      <View style={[s.topBar, { paddingTop: Platform.OS === 'ios' ? 50 : 40 }]}>
+        <View style={{ flex: 1 }}>
+          <Text style={s.topDate}>{todayDisplay} • Hello, {user?.name?.split(' ')[0]}</Text>
           <Text style={s.topTitle}>Milk Collection</Text>
         </View>
         <View style={s.segWrap}>
@@ -93,6 +96,9 @@ export default function MilkEntryScreen() {
             </TouchableOpacity>
           ))}
         </View>
+        <TouchableOpacity onPress={signOut} style={s.logoutBtn}>
+          <MaterialCommunityIcons name="logout" size={20} color={C.error} />
+        </TouchableOpacity>
       </View>
 
       {/* ── Vehicle search card ── */}
@@ -220,11 +226,12 @@ const s = StyleSheet.create({
   topBar:       { backgroundColor: C.white, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: C.border },
   topDate:      { fontSize: 12, color: C.textSec },
   topTitle:     { fontSize: 20, fontWeight: '800', color: C.textPri, letterSpacing: -0.5 },
-  segWrap:      { flexDirection: 'row', backgroundColor: C.surface, borderRadius: 10, padding: 3, gap: 2 },
+  segWrap:      { flexDirection: 'row', backgroundColor: C.surface, borderRadius: 10, padding: 3, gap: 2, marginRight: 10 },
   seg:          { paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8 },
   segActive:    { backgroundColor: C.teal },
   segTxt:       { color: C.textSec, fontSize: 11, fontWeight: '600' },
   segTxtActive: { color: '#fff', fontWeight: '700' },
+  logoutBtn:    { width: 36, height: 36, backgroundColor: '#FF3B3015', borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
 
   // Cards
   card:         { marginHorizontal: 16, marginTop: 12, backgroundColor: C.white, borderRadius: 16, padding: 16, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 10, elevation: 2, overflow: 'hidden' },

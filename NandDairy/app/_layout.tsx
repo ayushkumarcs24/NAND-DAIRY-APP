@@ -1,7 +1,7 @@
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { PaperProvider } from 'react-native-paper';
 import { AuthProvider, useAuth } from '../context/AuthContext';
-import { DairyTheme, C } from '../constants/Theme';
+import { C } from '../constants/Theme';
 import { useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 
@@ -49,7 +49,7 @@ const InitialLayout = () => {
 
 export default function RootLayout() {
   return (
-    <PaperProvider theme={DairyTheme}>
+    <PaperProvider>
       <AuthProvider>
         <InitialLayout />
       </AuthProvider>

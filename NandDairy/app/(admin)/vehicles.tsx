@@ -197,8 +197,8 @@ export default function VehiclesScreen() {
                 selectedValue={selectedSamiti}
                 onValueChange={v => setSelectedSamiti(v)}
                 dropdownIconColor={C.textSec}
-                style={{ color: '#fff' }}
-                itemStyle={{ color: '#fff', backgroundColor: C.surfaceVar }}
+                style={{ color: C.textPri }}
+                itemStyle={{ color: C.textPri, backgroundColor: C.inputFill }}
               >
                 {samitis.map(s2 => (
                   <Picker.Item key={s2.id} label={`${s2.name} (${s2.code_4digit})`} value={s2.id} />
@@ -229,14 +229,14 @@ const s = StyleSheet.create({
   screen:          { flex: 1, backgroundColor: C.bg },
   center:          { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: C.bg },
   listHeader:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
-  listTitle:       { fontSize: 22, fontWeight: '700', color: '#fff', letterSpacing: -0.3 },
+  listTitle:       { fontSize: 22, fontWeight: '700', color: C.textPri, letterSpacing: -0.3 },
   countBadge:      { backgroundColor: C.surfaceVar, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 },
-  countText:       { color: '#fff', fontSize: 12, fontWeight: '600' },
+  countText:       { color: C.textPri, fontSize: 12, fontWeight: '600' },
   addBtn:          { backgroundColor: C.primary, width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
   addBtnText:      { color: '#fff', fontSize: 22, fontWeight: '300', lineHeight: 26 },
-  card:            { backgroundColor: C.surface, borderRadius: 16, padding: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  truckIcon:       { width: 44, height: 44, borderRadius: 12, backgroundColor: C.primary + '22', justifyContent: 'center', alignItems: 'center' },
-  vehicleNum:      { color: '#fff', fontSize: 16, fontWeight: '700', letterSpacing: 0.5, fontFamily: 'monospace' },
+  card:            { backgroundColor: C.white, borderRadius: 16, padding: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'flex-start', gap: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
+  truckIcon:       { width: 44, height: 44, borderRadius: 12, backgroundColor: C.primary + '15', justifyContent: 'center', alignItems: 'center' },
+  vehicleNum:      { color: C.textPri, fontSize: 16, fontWeight: '700', letterSpacing: 0.5, fontFamily: 'monospace' },
   samitiChip:      { flexDirection: 'row', alignItems: 'center', backgroundColor: C.primary + '33', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, marginRight: 6 },
   samitiChipText:  { color: C.primary, fontSize: 11, fontWeight: '600' },
   chipRemove:      { color: C.error, fontSize: 10, fontWeight: '700' },
@@ -245,13 +245,13 @@ const s = StyleSheet.create({
   assignBtn:       { backgroundColor: C.primary + '33', borderRadius: 8, padding: 6, alignItems: 'center' },
   deleteBtn:       { padding: 6 },
   empty:           { textAlign: 'center', color: C.textSec, marginTop: 80, fontSize: 15 },
-  modalOverlay:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
-  modalCard:       { backgroundColor: '#ffffff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 },
-  modalTitle:      { color: '#fff', fontSize: 20, fontWeight: '700', marginBottom: 4, letterSpacing: -0.3 },
+  modalOverlay:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  modalCard:       { backgroundColor: C.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 },
+  modalTitle:      { color: C.textPri, fontSize: 20, fontWeight: '700', marginBottom: 4, letterSpacing: -0.3 },
   assignSubtitle:  { color: C.textSec, fontSize: 13, marginBottom: 18 },
   inputLabel:      { color: C.textSec, fontSize: 12, marginBottom: 6, letterSpacing: 0.1 },
-  inputField:      { backgroundColor: C.surfaceVar, borderRadius: 10, color: '#fff', fontSize: 15, paddingHorizontal: 14, height: 46, marginBottom: 14 },
-  pickerWrap:      { backgroundColor: C.surfaceVar, borderRadius: 10, marginBottom: 20, overflow: 'hidden' },
+  inputField:      { backgroundColor: C.inputFill, borderRadius: 10, color: C.textPri, fontSize: 15, paddingHorizontal: 14, height: 46, marginBottom: 14 },
+  pickerWrap:      { backgroundColor: C.inputFill, borderRadius: 10, marginBottom: 20, overflow: 'hidden' },
   primaryBtn:      { backgroundColor: C.primary, borderRadius: 10, height: 48, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
   primaryBtnText:  { color: '#fff', fontSize: 15, fontWeight: '600', letterSpacing: -0.2 },
   ghostBtn:        { height: 44, justifyContent: 'center', alignItems: 'center' },

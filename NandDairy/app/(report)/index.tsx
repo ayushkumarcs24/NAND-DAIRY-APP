@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, FlatList,
-  StyleSheet, ActivityIndicator, ScrollView,
+  StyleSheet, ActivityIndicator, ScrollView, Platform,
 } from 'react-native';
+import { useAuth } from '../../context/AuthContext';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { C } from '../../constants/Theme';
 
@@ -13,6 +15,7 @@ interface Samiti   { id: number; name: string; code_4digit: string; }
 const fmt = (d: string) => new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
 
 export default function ReportsScreen() {
+  const { user, signOut } = useAuth();
   const [tab, setTab]               = useState<'daily' | 'bill'>('daily');
   const [samitis, setSamitis]       = useState<Samiti[]>([]);
   const [selSamiti, setSelSamiti]   = useState<Samiti | null>(null);
@@ -53,9 +56,16 @@ export default function ReportsScreen() {
     <ScrollView style={s.screen} contentContainerStyle={{ paddingBottom: 48 }}>
 
       {/* ── Hero banner ── */}
-      <View style={s.hero}>
-        <Text style={s.heroDate}>{new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</Text>
-        <Text style={s.heroTitle}>Reports</Text>
+      <View style={[s.hero, { paddingTop: Platform.OS === 'ios' ? 50 : 20 }]}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <View>
+            <Text style={s.heroDate}>{new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })} • Hello, {user?.name?.split(' ')[0]}</Text>
+            <Text style={s.heroTitle}>Reports</Text>
+          </View>
+          <TouchableOpacity onPress={signOut} style={s.logoutBtn}>
+            <MaterialCommunityIcons name="logout" size={20} color="#fff" />
+          </TouchableOpacity>
+        </View>
         <View style={s.heroStats}>
           <View style={s.heroStat}>
             <Text style={s.heroStatVal}>{summary ? parseFloat(summary.summary?.total_milk || '0').toFixed(0) : '—'}</Text>
@@ -183,6 +193,7 @@ const s = StyleSheet.create({
   hero:        { backgroundColor: C.blue, padding: 24, paddingTop: 20 },
   heroDate:    { fontSize: 12, color: 'rgba(255,255,255,0.7)', fontWeight: '500' },
   heroTitle:   { fontSize: 28, fontWeight: '800', color: '#fff', marginBottom: 16, letterSpacing: -0.5 },
+  logoutBtn:   { width: 36, height: 36, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
   heroStats:   { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 16, padding: 16 },
   heroStat:    { flex: 1, alignItems: 'center' },
   heroStatVal: { fontSize: 20, fontWeight: '800', color: '#fff' },
