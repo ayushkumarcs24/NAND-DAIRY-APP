@@ -1,0 +1,8 @@
+$kind: http-request
+url: "{{baseUrl}}/api/reports/daily?date={{today}}"
+method: GET
+headers:
+  Authorization: Bearer {{adminToken}}
+queryParams:
+  date: "{{today}}"
+order: 1000

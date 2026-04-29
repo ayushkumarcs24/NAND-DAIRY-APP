@@ -186,7 +186,7 @@ const s = StyleSheet.create({
   productUnit:   { color: C.textSec, fontSize: 13, fontWeight: '400' },
   statusText:    { fontSize: 11, fontWeight: '600', marginTop: 4 },
   modalOverlay:  { flex: 1, backgroundColor: 'rgba(19,19,19,0.85)', justifyContent: 'flex-end' },
-  modalCard:     { backgroundColor: '#1c1c1e', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 },
+  modalCard:     { backgroundColor: '#ffffff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 },
   modalHeader:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   modalTitle:    { color: '#fff', fontSize: 20, fontWeight: '700', letterSpacing: -0.3 },
   inputLabel:    { color: C.textSec, fontSize: 13, marginBottom: 6 },

@@ -1,0 +1,9 @@
+$kind: http-request
+url: "{{baseUrl}}/api/reports/summary?from_date={{fromDate}}&to_date={{today}}"
+method: GET
+headers:
+  Authorization: Bearer {{adminToken}}
+queryParams:
+  from_date: "{{fromDate}}"
+  to_date: "{{today}}"
+order: 4000

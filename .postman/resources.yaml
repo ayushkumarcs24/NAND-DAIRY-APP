@@ -7,6 +7,7 @@ workspace:
 cloudResources:
   collections:
     ../postman/collections/Nand Dairy - Distributor API: ac37adba-1976-48b1-8141-348d2a7aed2f
+    ../postman/collections/Nand Dairy — Full API Collection: 9776853b-a7f4-4d37-b1a7-de4e2873ea27
 
 # All resources in the `postman/` folder are automatically registered in Local View.
 # Point to additional files outside the `postman/` folder to register them individually. Example:

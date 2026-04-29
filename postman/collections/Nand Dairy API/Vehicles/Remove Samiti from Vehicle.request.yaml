@@ -1,9 +1,0 @@
-$kind: http-request
-name: Remove Samiti from Vehicle
-url: "{{base_url}}/api/vehicles/1/samitis/1"
-method: DELETE
-auth:
-  type: bearer
-  credentials:
-    token: "{{token}}"
-order: 1775330042375

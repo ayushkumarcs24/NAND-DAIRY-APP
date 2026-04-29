@@ -1,0 +1,16 @@
+$kind: http-request
+url: "{{baseUrl}}/api/products/{{productId}}"
+method: PUT
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{adminToken}}
+body:
+  type: text
+  content: |-
+    {
+      "name": "Full Cream Milk",
+      "description": "Fresh daily pasteurized",
+      "price": "55.00",
+      "unit": "1L Pouch"
+    }
+order: 3000

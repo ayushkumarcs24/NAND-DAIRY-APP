@@ -1,0 +1,6 @@
+$kind: http-request
+url: "{{baseUrl}}/api/vehicles/search/MH09AB1234"
+method: GET
+headers:
+  Authorization: Bearer {{adminToken}}
+order: 4000

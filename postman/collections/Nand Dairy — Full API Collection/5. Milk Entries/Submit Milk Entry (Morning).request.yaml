@@ -1,0 +1,22 @@
+$kind: http-request
+url: "{{baseUrl}}/api/milk-entries"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{adminToken}}
+body:
+  type: text
+  content: |-
+    {
+      "samiti_id": {{samitiId}},
+      "shift": "morning",
+      "entry_date": "{{today}}",
+      "milk_quantity_liters": 120.5
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      const r = pm.response.json();
+      if (r.entryId) pm.collectionVariables.set('milkEntryId', r.entryId);
+    language: text/javascript
+order: 1000

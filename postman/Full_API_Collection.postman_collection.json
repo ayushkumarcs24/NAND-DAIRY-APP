@@ -1,0 +1,498 @@
+{
+  "info": {
+    "name": "Nand Dairy — Full API Collection",
+    "description": "Complete test suite for all Nand Dairy API endpoints. Run requests in numbered order. Tokens are auto-captured by test scripts.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Auth",
+      "item": [
+        {
+          "name": "Login as Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const r = pm.response.json();",
+                  "if (r.token) pm.collectionVariables.set('adminToken', r.token);",
+                  "pm.test('Login success', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"mobile_number\": \"9999999999\",\n  \"password\": \"admin123\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+          }
+        },
+        {
+          "name": "Login as Distributor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const r = pm.response.json();",
+                  "if (r.token) pm.collectionVariables.set('distToken', r.token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"mobile_number\": \"8888888888\",\n  \"password\": \"pass123\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+          }
+        },
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/health", "host": ["{{baseUrl}}"], "path": ["api", "health"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Users (Admin)",
+      "item": [
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/users", "host": ["{{baseUrl}}"], "path": ["api", "users"] }
+          }
+        },
+        {
+          "name": "Create Milk-Entry User",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Ramesh Patil\",\n  \"mobile_number\": \"7777777777\",\n  \"password\": \"pass123\",\n  \"role\": \"milk-entry\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/users", "host": ["{{baseUrl}}"], "path": ["api", "users"] }
+          }
+        },
+        {
+          "name": "Create Distributor User",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Raju Distributors\",\n  \"mobile_number\": \"8888888888\",\n  \"password\": \"pass123\",\n  \"role\": \"distributor\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/users", "host": ["{{baseUrl}}"], "path": ["api", "users"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Samitis (Admin)",
+      "item": [
+        {
+          "name": "Get All Samitis",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/samitis", "host": ["{{baseUrl}}"], "path": ["api", "samitis"] }
+          }
+        },
+        {
+          "name": "Create Samiti",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const r = pm.response.json();",
+                  "if (r.id) pm.collectionVariables.set('samitiId', r.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Kagal Samiti\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/samitis", "host": ["{{baseUrl}}"], "path": ["api", "samitis"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Vehicles (Admin)",
+      "item": [
+        {
+          "name": "Get All Vehicles",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/vehicles", "host": ["{{baseUrl}}"], "path": ["api", "vehicles"] }
+          }
+        },
+        {
+          "name": "Create Vehicle",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const r = pm.response.json();",
+                  "if (r.id) pm.collectionVariables.set('vehicleId', r.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"vehicle_number\": \"MH09AB1234\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/vehicles", "host": ["{{baseUrl}}"], "path": ["api", "vehicles"] }
+          }
+        },
+        {
+          "name": "Link Vehicle → Samiti",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"samiti_id\": {{samitiId}}\n}" },
+            "url": { "raw": "{{baseUrl}}/api/vehicles/{{vehicleId}}/samitis", "host": ["{{baseUrl}}"], "path": ["api", "vehicles", "{{vehicleId}}", "samitis"] }
+          }
+        },
+        {
+          "name": "Search Vehicle by Number",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/vehicles/search/MH09AB1234", "host": ["{{baseUrl}}"], "path": ["api", "vehicles", "search", "MH09AB1234"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Milk Entries",
+      "item": [
+        {
+          "name": "Submit Milk Entry (Morning)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const r = pm.response.json();",
+                  "if (r.entryId) pm.collectionVariables.set('milkEntryId', r.entryId);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"samiti_id\": {{samitiId}},\n  \"shift\": \"morning\",\n  \"entry_date\": \"{{today}}\",\n  \"milk_quantity_liters\": 120.5\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/milk-entries", "host": ["{{baseUrl}}"], "path": ["api", "milk-entries"] }
+          }
+        },
+        {
+          "name": "Get Today's Entries (All Shifts)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/milk-entries/today", "host": ["{{baseUrl}}"], "path": ["api", "milk-entries", "today"] }
+          }
+        },
+        {
+          "name": "Get Today's Entries (Morning Only)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/milk-entries/today?shift=morning",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "milk-entries", "today"],
+              "query": [{ "key": "shift", "value": "morning" }]
+            }
+          }
+        },
+        {
+          "name": "Get Milk Stats (Today vs Yesterday) ← NEW",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/milk-entries/stats?samiti_id={{samitiId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "milk-entries", "stats"],
+              "query": [{ "key": "samiti_id", "value": "{{samitiId}}" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. FAT / SNF",
+      "item": [
+        {
+          "name": "Get Pending FAT/SNF Queue",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/fat-snf/pending", "host": ["{{baseUrl}}"], "path": ["api", "fat-snf", "pending"] }
+          }
+        },
+        {
+          "name": "Submit FAT/SNF Values",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"milk_entry_id\": {{milkEntryId}},\n  \"fat_value\": 4.8,\n  \"snf_value\": 8.6,\n  \"rate_per_liter\": 32.00\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/fat-snf", "host": ["{{baseUrl}}"], "path": ["api", "fat-snf"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Reports",
+      "item": [
+        {
+          "name": "Daily Report (Today)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/daily?date={{today}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "daily"],
+              "query": [{ "key": "date", "value": "{{today}}" }]
+            }
+          }
+        },
+        {
+          "name": "Samiti Bill (Last 30 Days)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/bill?samiti_id={{samitiId}}&from_date={{fromDate}}&to_date={{today}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "bill"],
+              "query": [
+                { "key": "samiti_id", "value": "{{samitiId}}" },
+                { "key": "from_date", "value": "{{fromDate}}" },
+                { "key": "to_date", "value": "{{today}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "7-Day Summary (Hero Stats) ← NEW",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "summary"]
+            }
+          }
+        },
+        {
+          "name": "Custom Period Summary ← NEW",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/summary?from_date={{fromDate}}&to_date={{today}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "summary"],
+              "query": [
+                { "key": "from_date", "value": "{{fromDate}}" },
+                { "key": "to_date", "value": "{{today}}" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Products (Admin)",
+      "item": [
+        {
+          "name": "Get All Products",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/products", "host": ["{{baseUrl}}"], "path": ["api", "products"] }
+          }
+        },
+        {
+          "name": "Create Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const r = pm.response.json();",
+                  "if (r.id) pm.collectionVariables.set('productId', r.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Full Cream Milk\",\n  \"description\": \"Fresh daily pasteurized\",\n  \"price\": \"52.00\",\n  \"unit\": \"1L Pouch\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/products", "host": ["{{baseUrl}}"], "path": ["api", "products"] }
+          }
+        },
+        {
+          "name": "Update Product",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Full Cream Milk\",\n  \"description\": \"Fresh daily pasteurized\",\n  \"price\": \"55.00\",\n  \"unit\": \"1L Pouch\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/products/{{productId}}", "host": ["{{baseUrl}}"], "path": ["api", "products", "{{productId}}"] }
+          }
+        },
+        {
+          "name": "Toggle Product Availability",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"is_available\": false\n}" },
+            "url": { "raw": "{{baseUrl}}/api/products/{{productId}}/toggle", "host": ["{{baseUrl}}"], "path": ["api", "products", "{{productId}}", "toggle"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Orders (Distributor & Admin)",
+      "item": [
+        {
+          "name": "Check Pending Balance",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{distToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/orders/pending-balance", "host": ["{{baseUrl}}"], "path": ["api", "orders", "pending-balance"] }
+          }
+        },
+        {
+          "name": "Place Order (Distributor)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const r = pm.response.json();",
+                  "if (r.order && r.order.id) pm.collectionVariables.set('orderId', r.order.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{distToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    { \"product_id\": {{productId}}, \"quantity\": 10 }\n  ],\n  \"notes\": \"Deliver before 8am\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/orders", "host": ["{{baseUrl}}"], "path": ["api", "orders"] }
+          }
+        },
+        {
+          "name": "List My Orders (Distributor)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{distToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/orders", "host": ["{{baseUrl}}"], "path": ["api", "orders"] }
+          }
+        },
+        {
+          "name": "List All Orders (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/orders", "host": ["{{baseUrl}}"], "path": ["api", "orders"] }
+          }
+        },
+        {
+          "name": "Get Order Items",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/orders/{{orderId}}/items", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{orderId}}", "items"] }
+          }
+        },
+        {
+          "name": "Mark Order Paid (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/orders/{{orderId}}/pay", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{orderId}}", "pay"] }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl",      "value": "https://nand-dairy-backend.onrender.com" },
+    { "key": "adminToken",   "value": "" },
+    { "key": "distToken",    "value": "" },
+    { "key": "samitiId",     "value": "1" },
+    { "key": "vehicleId",    "value": "1" },
+    { "key": "milkEntryId",  "value": "1" },
+    { "key": "productId",    "value": "1" },
+    { "key": "orderId",      "value": "1" },
+    { "key": "today",        "value": "2026-04-29" },
+    { "key": "fromDate",     "value": "2026-03-30" }
+  ]
+}

@@ -10,13 +10,14 @@ export default function MilkEntryLayout() {
       <Stack.Screen
         name="index"
         options={{
-          title: 'Milk Entry',
-          headerStyle: { backgroundColor: '#000' },
-          headerTintColor: '#fff',
-          headerTitleStyle: { fontWeight: '600', letterSpacing: -0.3 },
+          title: 'Milk Collection',
+          headerStyle: { backgroundColor: C.white },
+          headerShadowVisible: false,
+          headerTintColor: C.textPri,
+          headerTitleStyle: { fontWeight: '800', fontSize: 18, color: C.textPri },
           headerRight: () => (
-            <TouchableOpacity onPress={signOut} style={{ marginRight: 4 }}>
-              <Text style={{ color: C.primary, fontSize: 15, fontWeight: '500' }}>Logout</Text>
+            <TouchableOpacity onPress={signOut} style={{ marginRight: 16 }}>
+              <Text style={{ color: C.error, fontSize: 14, fontWeight: '600' }}>Logout</Text>
             </TouchableOpacity>
           ),
         }}

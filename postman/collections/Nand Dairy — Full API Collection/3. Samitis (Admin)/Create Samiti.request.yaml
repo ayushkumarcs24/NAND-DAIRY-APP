@@ -1,0 +1,19 @@
+$kind: http-request
+url: "{{baseUrl}}/api/samitis"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{adminToken}}
+body:
+  type: text
+  content: |-
+    {
+      "name": "Kagal Samiti"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      const r = pm.response.json();
+      if (r.id) pm.collectionVariables.set('samitiId', r.id);
+    language: text/javascript
+order: 2000

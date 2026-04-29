@@ -10,13 +10,14 @@ export default function FatSnfLayout() {
       <Stack.Screen
         name="index"
         options={{
-          title: 'FAT / SNF Entry',
-          headerStyle: { backgroundColor: '#000' },
-          headerTintColor: '#fff',
-          headerTitleStyle: { fontWeight: '600', letterSpacing: -0.3 },
+          title: 'Quality Testing',
+          headerStyle: { backgroundColor: C.white },
+          headerShadowVisible: false,
+          headerTintColor: C.textPri,
+          headerTitleStyle: { fontWeight: '800', fontSize: 18, color: C.textPri },
           headerRight: () => (
-            <TouchableOpacity onPress={signOut} style={{ marginRight: 4 }}>
-              <Text style={{ color: C.primary, fontSize: 15, fontWeight: '500' }}>Logout</Text>
+            <TouchableOpacity onPress={signOut} style={{ marginRight: 16 }}>
+              <Text style={{ color: C.error, fontSize: 14, fontWeight: '600' }}>Logout</Text>
             </TouchableOpacity>
           ),
         }}

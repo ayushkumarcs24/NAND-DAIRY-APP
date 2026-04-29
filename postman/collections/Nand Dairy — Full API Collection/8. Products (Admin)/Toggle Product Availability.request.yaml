@@ -1,0 +1,13 @@
+$kind: http-request
+url: "{{baseUrl}}/api/products/{{productId}}/toggle"
+method: PATCH
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{adminToken}}
+body:
+  type: text
+  content: |-
+    {
+      "is_available": false
+    }
+order: 4000

@@ -1,0 +1,20 @@
+$kind: http-request
+url: "{{baseUrl}}/api/auth/login"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "mobile_number": "9999999999",
+      "password": "admin123"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      const r = pm.response.json();
+      if (r.token) pm.collectionVariables.set('adminToken', r.token);
+      pm.test('Login success', () => pm.response.to.have.status(200));
+    language: text/javascript
+order: 1000

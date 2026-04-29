@@ -195,7 +195,7 @@ const s = StyleSheet.create({
   orderAmount:    { color: '#fff', fontSize: 17, fontWeight: '700', letterSpacing: -0.2 },
   empty:          { textAlign: 'center', color: C.textSec, marginTop: 80, fontSize: 15 },
   modalOverlay:   { flex: 1, backgroundColor: 'rgba(19,19,19,0.85)', justifyContent: 'flex-end' },
-  modalCard:      { backgroundColor: '#1c1c1e', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 },
+  modalCard:      { backgroundColor: '#ffffff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 },
   modalHeader:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   modalTitle:     { color: '#fff', fontSize: 20, fontWeight: '700', letterSpacing: -0.3 },
   statusFullChip: { flexDirection: 'row', alignItems: 'center', borderRadius: 12, padding: 12, marginBottom: 16 },

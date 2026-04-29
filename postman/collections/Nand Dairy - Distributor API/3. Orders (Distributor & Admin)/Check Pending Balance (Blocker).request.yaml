@@ -1,6 +1,0 @@
-$kind: http-request
-url: "{{baseUrl}}/api/orders/pending-balance"
-method: GET
-headers:
-  Authorization: Bearer {{distToken}}
-order: 2000

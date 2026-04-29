@@ -1,0 +1,24 @@
+$kind: http-request
+url: "{{baseUrl}}/api/orders"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{distToken}}
+body:
+  type: text
+  content: |-
+    {
+      "items": [
+        { "product_id": {{productId}}, "quantity": 10 }
+      ],
+      "notes": "Deliver before 8am"
+    }
+scripts:
+  - type: afterResponse
+    code: >-
+      const r = pm.response.json();
+
+      if (r.order && r.order.id) pm.collectionVariables.set('orderId',
+      r.order.id);
+    language: text/javascript
+order: 2000

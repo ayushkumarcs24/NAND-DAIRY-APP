@@ -1,9 +1,0 @@
-$kind: http-request
-name: Search Vehicle by Number
-url: "{{base_url}}/api/vehicles/search/RJ-14-XY-1234"
-method: GET
-auth:
-  type: bearer
-  credentials:
-    token: "{{token}}"
-order: 1775330042376

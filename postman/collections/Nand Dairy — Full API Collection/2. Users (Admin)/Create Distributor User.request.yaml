@@ -1,0 +1,16 @@
+$kind: http-request
+url: "{{baseUrl}}/api/users"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{adminToken}}
+body:
+  type: text
+  content: |-
+    {
+      "name": "Raju Distributors",
+      "mobile_number": "8888888888",
+      "password": "pass123",
+      "role": "distributor"
+    }
+order: 3000

@@ -6,24 +6,26 @@ import { TouchableOpacity, Text } from 'react-native';
 
 export default function AdminLayout() {
   const { signOut } = useAuth();
-
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: C.primary,
-        tabBarInactiveTintColor: '#666',
+        tabBarActiveTintColor:   C.primary,
+        tabBarInactiveTintColor: C.textSec,
         tabBarStyle: {
-          backgroundColor: 'rgba(19,19,19,0.92)',
-          borderTopWidth: 0,
+          backgroundColor: C.white,
+          borderTopWidth: 1,
+          borderTopColor: C.border,
+          height: 60,
           elevation: 0,
+          shadowOpacity: 0,
         },
-        tabBarLabelStyle: { fontSize: 11, letterSpacing: -0.1 },
-        headerStyle: { backgroundColor: '#000' },
-        headerTintColor: '#fff',
-        headerTitleStyle: { fontWeight: '600', letterSpacing: -0.3 },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '500' },
+        headerStyle: { backgroundColor: C.white, shadowColor: 'transparent', elevation: 0 },
+        headerTintColor: C.textPri,
+        headerTitleStyle: { fontWeight: '700', fontSize: 18 },
         headerRight: () => (
           <TouchableOpacity onPress={signOut} style={{ marginRight: 16 }}>
-            <Text style={{ color: C.primary, fontSize: 15, fontWeight: '500' }}>Logout</Text>
+            <Text style={{ color: C.error, fontSize: 14, fontWeight: '600' }}>Logout</Text>
           </TouchableOpacity>
         ),
       }}
@@ -31,7 +33,7 @@ export default function AdminLayout() {
       <Tabs.Screen
         name="accountants"
         options={{
-          title: 'Accountants',
+          title: 'Staff',
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="account-group" size={size} color={color} />
           ),

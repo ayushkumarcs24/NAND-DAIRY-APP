@@ -10,15 +10,7 @@ export default function ReportLayout() {
       <Stack.Screen
         name="index"
         options={{
-          title: 'Reports',
-          headerStyle: { backgroundColor: '#000' },
-          headerTintColor: '#fff',
-          headerTitleStyle: { fontWeight: '600', letterSpacing: -0.3 },
-          headerRight: () => (
-            <TouchableOpacity onPress={signOut} style={{ marginRight: 4 }}>
-              <Text style={{ color: C.primary, fontSize: 15, fontWeight: '500' }}>Logout</Text>
-            </TouchableOpacity>
-          ),
+          headerShown: false,  // Reports has its own hero header inside the screen
         }}
       />
     </Stack>

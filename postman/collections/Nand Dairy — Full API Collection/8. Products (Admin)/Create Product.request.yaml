@@ -1,0 +1,22 @@
+$kind: http-request
+url: "{{baseUrl}}/api/products"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{adminToken}}
+body:
+  type: text
+  content: |-
+    {
+      "name": "Full Cream Milk",
+      "description": "Fresh daily pasteurized",
+      "price": "52.00",
+      "unit": "1L Pouch"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      const r = pm.response.json();
+      if (r.id) pm.collectionVariables.set('productId', r.id);
+    language: text/javascript
+order: 2000

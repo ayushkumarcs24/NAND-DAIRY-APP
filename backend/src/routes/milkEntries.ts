@@ -4,9 +4,9 @@ import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { requireRole } from '../middleware/roleGuard';
 
 const router = express.Router();
-
 router.use(authenticateToken);
 
+// ── POST /api/milk-entries ──────────────────────────────────────────────
 router.post('/', requireRole(['admin', 'milk-entry']), async (req: AuthRequest, res: Response) => {
     const { samiti_id, shift, entry_date, milk_quantity_liters } = req.body;
 
@@ -14,12 +14,21 @@ router.post('/', requireRole(['admin', 'milk-entry']), async (req: AuthRequest, 
         res.status(400).json({ error: 'samiti_id, shift, entry_date, and milk_quantity_liters are required.' });
         return;
     }
+    if (!['morning', 'evening'].includes(shift)) {
+        res.status(400).json({ error: "shift must be 'morning' or 'evening'." });
+        return;
+    }
+    const qty = parseFloat(milk_quantity_liters);
+    if (isNaN(qty) || qty <= 0) {
+        res.status(400).json({ error: 'milk_quantity_liters must be a positive number.' });
+        return;
+    }
 
     try {
         const result = await pool.query(
-            `INSERT INTO milk_entries (samiti_id, shift, entry_date, milk_quantity_liters, entered_by) 
+            `INSERT INTO milk_entries (samiti_id, shift, entry_date, milk_quantity_liters, entered_by)
              VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-            [samiti_id, shift, entry_date, milk_quantity_liters, req.user?.id]
+            [samiti_id, shift, entry_date, qty, req.user?.id]
         );
         res.status(201).json({ message: 'Milk entry submitted successfully', entryId: result.rows[0].id });
     } catch (error: any) {
@@ -32,7 +41,8 @@ router.post('/', requireRole(['admin', 'milk-entry']), async (req: AuthRequest, 
     }
 });
 
-// GET today's milk entries, with optional ?shift=morning|evening filter
+// ── GET /api/milk-entries/today ─────────────────────────────────────────
+// Returns today's entries, optionally filtered by ?shift=morning|evening
 router.get('/today', async (req: AuthRequest, res: Response) => {
     try {
         const { shift } = req.query;
@@ -48,7 +58,6 @@ router.get('/today', async (req: AuthRequest, res: Response) => {
             params.push(shift);
             query += ` AND m.shift = $${params.length}`;
         }
-
         query += ' ORDER BY m.created_at DESC';
 
         const result = await pool.query(query, params);
@@ -58,5 +67,27 @@ router.get('/today', async (req: AuthRequest, res: Response) => {
     }
 });
 
-export default router;
+// ── GET /api/milk-entries/stats ─────────────────────────────────────────
+// Returns today vs yesterday totals for a specific samiti
+// Used by the milk-entry UI to show "Yesterday: X L" hint
+// Query: ?samiti_id=1
+router.get('/stats', requireRole(['admin', 'milk-entry']), async (req: AuthRequest, res: Response) => {
+    try {
+        const { samiti_id } = req.query;
+        if (!samiti_id) { res.status(400).json({ error: 'samiti_id is required.' }); return; }
 
+        const result = await pool.query(
+            `SELECT
+                COALESCE(SUM(CASE WHEN entry_date = CURRENT_DATE     THEN milk_quantity_liters END), 0) AS today_total,
+                COALESCE(SUM(CASE WHEN entry_date = CURRENT_DATE - 1 THEN milk_quantity_liters END), 0) AS yesterday_total
+             FROM milk_entries
+             WHERE samiti_id = $1 AND entry_date >= CURRENT_DATE - 1`,
+            [samiti_id]
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+export default router;

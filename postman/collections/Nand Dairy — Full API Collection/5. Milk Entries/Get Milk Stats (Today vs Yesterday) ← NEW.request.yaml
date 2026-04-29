@@ -1,0 +1,8 @@
+$kind: http-request
+url: "{{baseUrl}}/api/milk-entries/stats?samiti_id={{samitiId}}"
+method: GET
+headers:
+  Authorization: Bearer {{adminToken}}
+queryParams:
+  samiti_id: "{{samitiId}}"
+order: 4000

@@ -1,0 +1,19 @@
+$kind: http-request
+url: "{{baseUrl}}/api/vehicles"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{adminToken}}
+body:
+  type: text
+  content: |-
+    {
+      "vehicle_number": "MH09AB1234"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      const r = pm.response.json();
+      if (r.id) pm.collectionVariables.set('vehicleId', r.id);
+    language: text/javascript
+order: 2000

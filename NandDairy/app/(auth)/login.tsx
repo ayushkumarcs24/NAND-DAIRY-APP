@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import {
-  View, StyleSheet, KeyboardAvoidingView,
-  Platform, Text, TextInput, TouchableOpacity,
-  ActivityIndicator,
+  View, StyleSheet, KeyboardAvoidingView, Platform,
+  Text, TextInput, TouchableOpacity, ActivityIndicator, ScrollView,
 } from 'react-native';
 import axios from 'axios';
 import { API_URL } from '../../constants/ApiHelper';
@@ -11,53 +10,43 @@ import { C } from '../../constants/Theme';
 
 export default function LoginScreen() {
   const [mobileNumber, setMobileNumber] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPass, setShowPass] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [password, setPassword]         = useState('');
+  const [showPass, setShowPass]         = useState(false);
+  const [loading, setLoading]           = useState(false);
+  const [error, setError]               = useState('');
   const { signIn } = useAuth();
 
   const handleLogin = async () => {
-    if (!mobileNumber || !password) {
-      setError('Both fields are required.');
-      return;
-    }
+    if (!mobileNumber || !password) { setError('Both fields are required.'); return; }
     try {
-      setLoading(true);
-      setError('');
+      setLoading(true); setError('');
       const response = await axios.post(`${API_URL}/auth/login`, {
-        mobile_number: mobileNumber,
-        password,
+        mobile_number: mobileNumber, password,
       });
       const { token, user } = response.data;
       await signIn(token, user.role);
     } catch (err: any) {
-      if (err.response?.data?.error) {
-        setError(err.response.data.error);
-      } else {
-        setError('Network error. Please make sure the server is running.');
-      }
-    } finally {
-      setLoading(false);
-    }
+      setError(err.response?.data?.error || 'Network error. Please check the server.');
+    } finally { setLoading(false); }
   };
 
   return (
-    <KeyboardAvoidingView
-      style={s.screen}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      {/* Logo area */}
+    <KeyboardAvoidingView style={s.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+
+      {/* ── Logo area ── */}
       <View style={s.logoArea}>
-        <Text style={s.logoEmoji}>🥛</Text>
+        <View style={s.logoHalo}>
+          <Text style={s.logoEmoji}>🥛</Text>
+        </View>
         <Text style={s.logoTitle}>Nand Dairy</Text>
-        <Text style={s.logoSub}>Dairy Management</Text>
+        <Text style={s.logoSub}>Cooperative Management System</Text>
+        <View style={s.accentLine} />
       </View>
 
-      {/* Card */}
-      <View style={s.card}>
-        <Text style={s.cardTitle}>Sign In</Text>
+      {/* ── Form sheet ── */}
+      <View style={s.formSheet}>
 
+        {/* Mobile input */}
         <Text style={s.label}>Mobile Number</Text>
         <View style={s.inputWrap}>
           <Text style={s.inputIcon}>📱</Text>
@@ -73,6 +62,7 @@ export default function LoginScreen() {
           />
         </View>
 
+        {/* Password input */}
         <Text style={s.label}>Password</Text>
         <View style={s.inputWrap}>
           <Text style={s.inputIcon}>🔒</Text>
@@ -90,48 +80,66 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
 
-        {!!error && <Text style={s.errorText}>{error}</Text>}
+        {!!error && (
+          <View style={s.errorBox}>
+            <Text style={s.errorText}>{error}</Text>
+          </View>
+        )}
 
         <TouchableOpacity
           style={[s.button, loading && { opacity: 0.7 }]}
           onPress={handleLogin}
           disabled={loading}
-          activeOpacity={0.85}
+          activeOpacity={0.9}
         >
           {loading
             ? <ActivityIndicator color="#fff" size="small" />
-            : <Text style={s.buttonText}>Login</Text>
+            : <Text style={s.buttonText}>Sign In  →</Text>
           }
         </TouchableOpacity>
-      </View>
 
-      <Text style={s.version}>v1.0</Text>
+        <Text style={s.version}>Nand Dairy v2.0</Text>
+      </View>
     </KeyboardAvoidingView>
   );
 }
 
 const s = StyleSheet.create({
-  screen:     { flex: 1, backgroundColor: '#000', justifyContent: 'center', padding: 24 },
-  logoArea:   { alignItems: 'center', marginBottom: 40 },
-  logoEmoji:  { fontSize: 48, marginBottom: 8 },
-  logoTitle:  { fontSize: 32, fontWeight: '700', color: '#fff', letterSpacing: -0.5 },
-  logoSub:    { fontSize: 14, color: C.textSec, marginTop: 4, letterSpacing: 0.2 },
-  card:       { backgroundColor: '#1c1c1e', borderRadius: 20, padding: 24 },
-  cardTitle:  { fontSize: 22, fontWeight: '600', color: '#fff', marginBottom: 20, letterSpacing: -0.3 },
-  label:      { fontSize: 12, color: C.textSec, marginBottom: 6, letterSpacing: 0.1 },
-  inputWrap:  {
+  screen:      { flex: 1, backgroundColor: C.white },
+
+  // Logo
+  logoArea:    { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 60 },
+  logoHalo:    {
+    width: 96, height: 96, borderRadius: 48,
+    backgroundColor: C.primaryLight, justifyContent: 'center', alignItems: 'center', marginBottom: 16,
+  },
+  logoEmoji:   { fontSize: 44 },
+  logoTitle:   { fontSize: 28, fontWeight: '800', color: C.textPri, letterSpacing: -0.8, marginBottom: 6 },
+  logoSub:     { fontSize: 13, color: C.textSec, fontWeight: '500', marginBottom: 16 },
+  accentLine:  { width: 40, height: 3, borderRadius: 2, backgroundColor: C.primary },
+
+  // Form Sheet
+  formSheet:   {
+    backgroundColor: C.bg, borderTopLeftRadius: 32, borderTopRightRadius: 32,
+    paddingHorizontal: 24, paddingTop: 32, paddingBottom: 48,
+  },
+  label:       { fontSize: 12, fontWeight: '600', color: C.textSec, letterSpacing: 0.5, marginBottom: 8 },
+  inputWrap:   {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: C.surfaceVar, borderRadius: 10,
-    paddingHorizontal: 12, marginBottom: 16, height: 48,
+    backgroundColor: C.white, borderRadius: 14, borderWidth: 1, borderColor: C.border,
+    paddingHorizontal: 16, marginBottom: 16, height: 52,
   },
-  inputIcon:  { fontSize: 16, marginRight: 8 },
-  input:      { flex: 1, color: '#fff', fontSize: 15, letterSpacing: -0.2 },
-  eyeBtn:     { padding: 4 },
-  errorText:  { color: C.error, fontSize: 13, marginBottom: 12, letterSpacing: -0.1 },
-  button:     {
-    backgroundColor: C.primary, borderRadius: 10,
-    height: 48, justifyContent: 'center', alignItems: 'center', marginTop: 4,
+  inputIcon:   { fontSize: 18, marginRight: 10 },
+  input:       { flex: 1, color: C.textPri, fontSize: 15 },
+  eyeBtn:      { padding: 4 },
+  errorBox:    { backgroundColor: C.errorBg, borderRadius: 10, padding: 12, marginBottom: 16 },
+  errorText:   { color: C.error, fontSize: 13, fontWeight: '500' },
+  button:      {
+    backgroundColor: C.primary, borderRadius: 16, height: 56,
+    justifyContent: 'center', alignItems: 'center', marginTop: 8, marginBottom: 20,
+    shadowColor: C.primary, shadowOpacity: 0.35, shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 20, elevation: 8,
   },
-  buttonText: { color: '#fff', fontSize: 15, fontWeight: '600', letterSpacing: -0.2 },
-  version:    { color: C.textTer, fontSize: 12, textAlign: 'center', marginTop: 32 },
+  buttonText:  { color: '#fff', fontSize: 17, fontWeight: '700' },
+  version:     { color: C.textTer, fontSize: 12, textAlign: 'center' },
 });

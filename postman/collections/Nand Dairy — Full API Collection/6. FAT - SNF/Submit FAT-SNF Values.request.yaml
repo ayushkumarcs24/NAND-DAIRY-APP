@@ -1,0 +1,17 @@
+$kind: http-request
+name: Submit FAT/SNF Values
+url: "{{baseUrl}}/api/fat-snf"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{adminToken}}
+body:
+  type: text
+  content: |-
+    {
+      "milk_entry_id": {{milkEntryId}},
+      "fat_value": 4.8,
+      "snf_value": 8.6,
+      "rate_per_liter": 32.00
+    }
+order: 2000

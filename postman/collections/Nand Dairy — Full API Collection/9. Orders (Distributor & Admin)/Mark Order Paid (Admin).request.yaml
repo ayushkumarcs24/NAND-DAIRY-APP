@@ -1,0 +1,6 @@
+$kind: http-request
+url: "{{baseUrl}}/api/orders/{{orderId}}/pay"
+method: PATCH
+headers:
+  Authorization: Bearer {{adminToken}}
+order: 6000

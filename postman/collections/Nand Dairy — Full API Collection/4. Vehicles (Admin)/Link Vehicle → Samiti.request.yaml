@@ -1,0 +1,13 @@
+$kind: http-request
+url: "{{baseUrl}}/api/vehicles/{{vehicleId}}/samitis"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{adminToken}}
+body:
+  type: text
+  content: |-
+    {
+      "samiti_id": {{samitiId}}
+    }
+order: 3000

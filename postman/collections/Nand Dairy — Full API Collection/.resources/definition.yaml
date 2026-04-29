@@ -1,0 +1,14 @@
+$kind: collection
+description: Complete test suite for all Nand Dairy API endpoints. Run requests
+  in numbered order. Tokens are auto-captured by test scripts.
+variables:
+  baseUrl: https://nand-dairy-backend.onrender.com
+  adminToken: ""
+  distToken: ""
+  samitiId: "1"
+  vehicleId: "1"
+  milkEntryId: "1"
+  productId: "1"
+  orderId: "1"
+  today: 2026-04-29
+  fromDate: 2026-03-30

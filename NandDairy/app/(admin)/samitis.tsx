@@ -134,7 +134,7 @@ const s = StyleSheet.create({
   codeText:      { color: '#fff', fontWeight: '700', fontSize: 17, letterSpacing: 2 },
   empty:         { textAlign: 'center', color: C.textSec, marginTop: 80, fontSize: 15 },
   modalOverlay:  { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
-  modalCard:     { backgroundColor: '#1c1c1e', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 },
+  modalCard:     { backgroundColor: '#ffffff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 },
   modalTitle:    { color: '#fff', fontSize: 20, fontWeight: '700', marginBottom: 4, letterSpacing: -0.3 },
   modalSub:      { color: C.textSec, fontSize: 13, marginBottom: 20 },
   inputLabel:    { color: C.textSec, fontSize: 12, marginBottom: 6, letterSpacing: 0.1 },

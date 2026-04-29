@@ -1,242 +1,223 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  View, Text, TouchableOpacity, ScrollView,
-  StyleSheet, RefreshControl, ActivityIndicator,
+  View, Text, TouchableOpacity, FlatList,
+  StyleSheet, ActivityIndicator, ScrollView,
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import api from '../../services/api';
 import { C } from '../../constants/Theme';
 
-interface Samiti { id: number; name: string; code_4digit: string; }
 interface DailyRow { samiti_name: string; samiti_code: string; total_milk: string; avg_fat: string; avg_snf: string; total_amount: string; }
-interface BillRow { date: string; milk: string; fat: string; snf: string; rate: string; amount: string; }
+interface BillRow  { date: string; milk: string; fat: string; snf: string; rate: string; amount: string; }
+interface Samiti   { id: number; name: string; code_4digit: string; }
 
-const fmt = (n: string | number) => parseFloat(String(n) || '0').toFixed(2);
-const fmtDate = (iso: string) => { try { return new Date(iso).toLocaleDateString('en-IN'); } catch { return iso; } };
-const toYMD = (d: Date) => d.toISOString().split('T')[0];
+const fmt = (d: string) => new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
 
-export default function ReportScreen() {
-  const [tab, setTab] = useState<'daily' | 'bill'>('daily');
-  const [dailyDate, setDailyDate] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [dailyData, setDailyData] = useState<DailyRow[]>([]);
-  const [dailyLoading, setDailyLoading] = useState(false);
-  const [samitis, setSamitis] = useState<Samiti[]>([]);
-  const [selectedSamiti, setSelectedSamiti] = useState<number | null>(null);
-  const [fromDate, setFromDate] = useState(() => { const d = new Date(); d.setDate(d.getDate() - 9); return d; });
-  const [toDate, setToDate] = useState(new Date());
-  const [billData, setBillData] = useState<BillRow[]>([]);
-  const [billLoading, setBillLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+export default function ReportsScreen() {
+  const [tab, setTab]               = useState<'daily' | 'bill'>('daily');
+  const [samitis, setSamitis]       = useState<Samiti[]>([]);
+  const [selSamiti, setSelSamiti]   = useState<Samiti | null>(null);
+  const [today] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate]             = useState(today);
+  const [daily, setDaily]           = useState<DailyRow[]>([]);
+  const [bill, setBill]             = useState<BillRow[]>([]);
+  const [loading, setLoading]       = useState(false);
+  const [summary, setSummary]       = useState<any>(null);
 
-  const fetchSamitis = useCallback(async () => {
-    try {
-      const res = await api.get('/samitis');
-      setSamitis(res.data);
-      if (res.data.length > 0) setSelectedSamiti(res.data[0].id);
-    } catch { }
+  useEffect(() => {
+    api.get('/samitis').then(r => { setSamitis(r.data); if (r.data.length) setSelSamiti(r.data[0]); }).catch(() => {});
+    api.get('/reports/summary').then(r => setSummary(r.data)).catch(() => {});
+    fetchDaily(today);
   }, []);
 
-  useEffect(() => { fetchSamitis(); }, [fetchSamitis]);
+  const fetchDaily = async (d: string) => {
+    setLoading(true);
+    try { const r = await api.get(`/reports/daily?date=${d}`); setDaily(r.data); }
+    catch { } finally { setLoading(false); }
+  };
 
-  const fetchDaily = useCallback(async () => {
-    setDailyLoading(true);
-    try {
-      const res = await api.get(`/reports/daily?date=${toYMD(dailyDate)}`);
-      setDailyData(res.data);
-    } catch { } finally { setDailyLoading(false); setRefreshing(false); }
-  }, [dailyDate]);
+  const fetchBill = async () => {
+    if (!selSamiti) return;
+    setLoading(true);
+    const from = new Date(); from.setDate(from.getDate() - 29);
+    const fromStr = from.toISOString().split('T')[0];
+    try { const r = await api.get(`/reports/bill?samiti_id=${selSamiti.id}&from_date=${fromStr}&to_date=${today}`); setBill(r.data); }
+    catch { } finally { setLoading(false); }
+  };
 
-  const fetchBill = useCallback(async () => {
-    if (!selectedSamiti) return;
-    setBillLoading(true);
-    try {
-      const res = await api.get(`/reports/bill?samiti_id=${selectedSamiti}&from_date=${toYMD(fromDate)}&to_date=${toYMD(toDate)}`);
-      setBillData(res.data);
-    } catch { } finally { setBillLoading(false); setRefreshing(false); }
-  }, [selectedSamiti, fromDate, toDate]);
+  useEffect(() => { if (tab === 'bill') fetchBill(); }, [tab, selSamiti]);
 
-  useEffect(() => { if (tab === 'daily') fetchDaily(); }, [tab, fetchDaily]);
-  useEffect(() => { if (tab === 'bill') fetchBill(); }, [tab, fetchBill]);
-
-  const totalMilk = dailyData.reduce((s, r) => s + parseFloat(r.total_milk || '0'), 0);
-  const totalAmount = dailyData.reduce((s, r) => s + parseFloat(r.total_amount || '0'), 0);
-  const billTotal = billData.reduce((s, r) => s + parseFloat(r.amount || '0'), 0);
-  const billMilk = billData.reduce((s, r) => s + parseFloat(r.milk || '0'), 0);
+  const totalMilk   = daily.reduce((a, r) => a + parseFloat(r.total_milk  || '0'), 0);
+  const totalPayout = daily.reduce((a, r) => a + parseFloat(r.total_amount || '0'), 0);
 
   return (
-    <View style={s.screen}>
-      {/* Tab selector */}
-      <View style={s.tabBar}>
+    <ScrollView style={s.screen} contentContainerStyle={{ paddingBottom: 48 }}>
+
+      {/* ── Hero banner ── */}
+      <View style={s.hero}>
+        <Text style={s.heroDate}>{new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</Text>
+        <Text style={s.heroTitle}>Reports</Text>
+        <View style={s.heroStats}>
+          <View style={s.heroStat}>
+            <Text style={s.heroStatVal}>{summary ? parseFloat(summary.summary?.total_milk || '0').toFixed(0) : '—'}</Text>
+            <Text style={s.heroStatLbl}>Liters (7d)</Text>
+          </View>
+          <View style={s.heroDiv} />
+          <View style={s.heroStat}>
+            <Text style={s.heroStatVal}>₹{summary ? parseFloat(summary.summary?.total_payout || '0').toFixed(0) : '—'}</Text>
+            <Text style={s.heroStatLbl}>Payout (7d)</Text>
+          </View>
+          <View style={s.heroDiv} />
+          <View style={s.heroStat}>
+            <Text style={s.heroStatVal}>{summary ? (summary.summary?.active_samitis || '—') : '—'}</Text>
+            <Text style={s.heroStatLbl}>Samitis</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* ── Tab switcher ── */}
+      <View style={s.tabRow}>
         {(['daily', 'bill'] as const).map(t => (
           <TouchableOpacity key={t} style={[s.tabBtn, tab === t && s.tabBtnActive]} onPress={() => setTab(t)}>
-            <Text style={[s.tabText, tab === t && s.tabTextActive]}>
-              {t === 'daily' ? '📋 Daily Summary' : '🧾 10-Day Bill'}
+            <Text style={[s.tabTxt, tab === t && s.tabTxtActive]}>
+              {t === 'daily' ? '📅 Daily Report' : '🧾 Samiti Bill'}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      {/* ── DAILY TAB ── */}
-      {tab === 'daily' && (
-        <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchDaily(); }} tintColor={C.primary} />}>
-          <View style={s.dateRow}>
-            <Text style={s.dateRowLabel}>📅 Date:</Text>
-            <TouchableOpacity style={s.dateBtn} onPress={() => setShowDatePicker(true)}>
-              <Text style={s.dateBtnText}>{toYMD(dailyDate)}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={s.loadBtn} onPress={fetchDaily}>
-              <Text style={s.loadBtnText}>Load</Text>
-            </TouchableOpacity>
+      {loading && <ActivityIndicator color={C.blue} style={{ marginTop: 24 }} />}
+
+      {/* ── Daily report ── */}
+      {tab === 'daily' && !loading && (
+        <>
+          {/* Summary cards */}
+          <View style={s.statRow}>
+            <View style={[s.statCard, { borderTopColor: C.blue }]}>
+              <Text style={s.statVal}>{totalMilk.toFixed(1)}</Text>
+              <Text style={s.statLbl}>Total Liters</Text>
+            </View>
+            <View style={[s.statCard, { borderTopColor: C.success }]}>
+              <Text style={s.statVal}>₹{totalPayout.toFixed(0)}</Text>
+              <Text style={s.statLbl}>Total Payout</Text>
+            </View>
+            <View style={[s.statCard, { borderTopColor: C.coral }]}>
+              <Text style={s.statVal}>{daily.length}</Text>
+              <Text style={s.statLbl}>Samitis</Text>
+            </View>
           </View>
-          {showDatePicker && (
-            <DateTimePicker
-              value={dailyDate} mode="date" display="default"
-              onChange={(_, d) => { setShowDatePicker(false); if (d) setDailyDate(d); }}
-            />
-          )}
 
-          {dailyLoading ? <ActivityIndicator color={C.primary} style={{ marginTop: 40 }} /> : (
-            <>
-              {/* Table */}
-              <View style={s.tableCard}>
-                {/* Header */}
-                <View style={[s.tableRow, s.tableHeader]}>
-                  <Text style={[s.tableCell, s.headerCell, { flex: 2 }]}>Samiti</Text>
-                  <Text style={[s.tableCell, s.headerCell, s.numCell]}>Milk(L)</Text>
-                  <Text style={[s.tableCell, s.headerCell, s.numCell]}>FAT</Text>
-                  <Text style={[s.tableCell, s.headerCell, s.numCell]}>SNF</Text>
-                  <Text style={[s.tableCell, s.headerCell, s.numCell]}>₹</Text>
-                </View>
-                {dailyData.map((r, i) => (
-                  <View key={i} style={[s.tableRow, i % 2 === 0 ? s.rowEven : s.rowOdd]}>
-                    <View style={[s.tableCell, { flex: 2 }]}>
-                      <Text style={s.cellText}>{r.samiti_name}</Text>
-                      <Text style={{ color: C.primary, fontSize: 11 }}>{r.samiti_code}</Text>
-                    </View>
-                    <Text style={[s.tableCell, s.numCell, s.cellText]}>{fmt(r.total_milk)}</Text>
-                    <Text style={[s.tableCell, s.numCell, s.cellText]}>{fmt(r.avg_fat)}%</Text>
-                    <Text style={[s.tableCell, s.numCell, s.cellText]}>{fmt(r.avg_snf)}%</Text>
-                    <Text style={[s.tableCell, s.numCell, s.cellText]}>{fmt(r.total_amount)}</Text>
-                  </View>
-                ))}
-                {dailyData.length === 0 && <Text style={s.empty}>No data for this date.</Text>}
+          {/* Table */}
+          <View style={s.table}>
+            <View style={s.tableHead}>
+              <Text style={[s.th, { flex: 2 }]}>SAMITI</Text>
+              <Text style={s.th}>MILK</Text>
+              <Text style={s.th}>FAT</Text>
+              <Text style={s.th}>SNF</Text>
+              <Text style={s.th}>AMOUNT</Text>
+            </View>
+            {daily.map((r, i) => (
+              <View key={i} style={[s.tableRow, i % 2 === 1 && { backgroundColor: C.surfaceLow }]}>
+                <Text style={[s.td, { flex: 2, color: C.textPri, fontWeight: '600' }]}>{r.samiti_name}</Text>
+                <Text style={s.td}>{parseFloat(r.total_milk).toFixed(1)}</Text>
+                <Text style={s.td}>{r.avg_fat || '—'}</Text>
+                <Text style={s.td}>{r.avg_snf || '—'}</Text>
+                <Text style={[s.td, { color: C.success, fontWeight: '600' }]}>₹{parseFloat(r.total_amount || '0').toFixed(0)}</Text>
               </View>
-
-              {dailyData.length > 0 && (
-                <View style={s.totalCard}>
-                  <Text style={s.totalLabel}>Grand Total</Text>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={s.totalMilk}>🥛 {totalMilk.toFixed(2)} L</Text>
-                    <Text style={s.totalAmount}>₹{totalAmount.toFixed(2)}</Text>
-                  </View>
-                </View>
-              )}
-            </>
-          )}
-        </ScrollView>
+            ))}
+            {daily.length === 0 && <Text style={s.empty}>No entries for today.</Text>}
+          </View>
+        </>
       )}
 
-      {/* ── BILL TAB ── */}
-      {tab === 'bill' && (
-        <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchBill(); }} tintColor={C.primary} />}>
-          <View style={s.billControls}>
-            <Text style={s.billControlLabel}>Select Samiti</Text>
-            <View style={s.pickerWrap}>
-              <Picker selectedValue={selectedSamiti} onValueChange={v => setSelectedSamiti(v)} dropdownIconColor={C.textSec} style={{ color: '#fff' }}>
-                {samitis.map(sm => <Picker.Item key={sm.id} label={`${sm.name} (${sm.code_4digit})`} value={sm.id} />)}
-              </Picker>
-            </View>
-            <View style={s.dateRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={s.dateRowLabel}>From</Text>
-                <TouchableOpacity style={s.dateBtn} onPress={() => setShowDatePicker(true)}>
-                  <Text style={s.dateBtnText}>{toYMD(fromDate)}</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={s.dateRowLabel}>To</Text>
-                <TouchableOpacity style={s.dateBtn} onPress={() => setShowDatePicker(true)}>
-                  <Text style={s.dateBtnText}>{toYMD(toDate)}</Text>
-                </TouchableOpacity>
-              </View>
-              <TouchableOpacity style={[s.loadBtn, { alignSelf: 'flex-end', marginLeft: 8 }]} onPress={fetchBill}>
-                <Text style={s.loadBtnText}>Load</Text>
+      {/* ── Bill report ── */}
+      {tab === 'bill' && !loading && (
+        <>
+          {/* Samiti chips */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipRow}>
+            {samitis.map(sm => (
+              <TouchableOpacity key={sm.id} style={[s.chip, selSamiti?.id === sm.id && s.chipActive]} onPress={() => setSelSamiti(sm)}>
+                <Text style={[s.chipTxt, selSamiti?.id === sm.id && s.chipTxtActive]}>{sm.name}</Text>
               </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          {selSamiti && (
+            <View style={s.billSummary}>
+              <Text style={s.billSamiti}>{selSamiti.name}</Text>
+              <Text style={s.billPeriod}>Last 30 days</Text>
+              <Text style={s.billTotal}>
+                ₹{bill.reduce((a, r) => a + parseFloat(r.amount || '0'), 0).toFixed(2)}
+              </Text>
             </View>
-          </View>
-
-          <View style={s.divider} />
-
-          {billLoading ? <ActivityIndicator color={C.primary} style={{ marginTop: 40 }} /> : (
-            <>
-              <View style={s.tableCard}>
-                <View style={[s.tableRow, s.tableHeader]}>
-                  <Text style={[s.tableCell, s.headerCell]}>Date</Text>
-                  <Text style={[s.tableCell, s.headerCell, s.numCell]}>Milk</Text>
-                  <Text style={[s.tableCell, s.headerCell, s.numCell]}>FAT</Text>
-                  <Text style={[s.tableCell, s.headerCell, s.numCell]}>SNF</Text>
-                  <Text style={[s.tableCell, s.headerCell, s.numCell]}>₹</Text>
-                </View>
-                {billData.map((r, i) => (
-                  <View key={i} style={[s.tableRow, i % 2 === 0 ? s.rowEven : s.rowOdd]}>
-                    <Text style={[s.tableCell, s.cellText]}>{fmtDate(r.date)}</Text>
-                    <Text style={[s.tableCell, s.numCell, s.cellText]}>{fmt(r.milk)}L</Text>
-                    <Text style={[s.tableCell, s.numCell, s.cellText]}>{fmt(r.fat)}%</Text>
-                    <Text style={[s.tableCell, s.numCell, s.cellText]}>{fmt(r.snf)}%</Text>
-                    <Text style={[s.tableCell, s.numCell, s.cellText]}>₹{fmt(r.amount)}</Text>
-                  </View>
-                ))}
-                {billData.length === 0 && <Text style={s.empty}>No data for this range.</Text>}
-              </View>
-
-              {billData.length > 0 && (
-                <View style={s.totalCard}>
-                  <Text style={s.totalLabel}>Bill Total</Text>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={s.totalMilk}>🥛 {billMilk.toFixed(2)} L</Text>
-                    <Text style={s.totalAmount}>₹{billTotal.toFixed(2)}</Text>
-                  </View>
-                </View>
-              )}
-            </>
           )}
-        </ScrollView>
+
+          <View style={s.table}>
+            <View style={s.tableHead}>
+              <Text style={[s.th, { flex: 1.2 }]}>DATE</Text>
+              <Text style={s.th}>MILK</Text>
+              <Text style={s.th}>FAT</Text>
+              <Text style={s.th}>RATE</Text>
+              <Text style={s.th}>AMOUNT</Text>
+            </View>
+            {bill.map((r, i) => (
+              <View key={i} style={[s.tableRow, i % 2 === 1 && { backgroundColor: C.surfaceLow }]}>
+                <Text style={[s.td, { flex: 1.2 }]}>{fmt(r.date)}</Text>
+                <Text style={s.td}>{parseFloat(r.milk).toFixed(1)}</Text>
+                <Text style={s.td}>{r.fat}</Text>
+                <Text style={s.td}>₹{r.rate}</Text>
+                <Text style={[s.td, { color: C.success, fontWeight: '600' }]}>₹{parseFloat(r.amount).toFixed(2)}</Text>
+              </View>
+            ))}
+            {bill.length === 0 && <Text style={s.empty}>No data for this samiti.</Text>}
+          </View>
+        </>
       )}
-    </View>
+    </ScrollView>
   );
 }
 
 const s = StyleSheet.create({
-  screen:           { flex: 1, backgroundColor: C.bg },
-  tabBar:           { flexDirection: 'row', gap: 3, margin: 12, backgroundColor: C.surfaceVar, borderRadius: 12, padding: 4 },
-  tabBtn:           { flex: 1, paddingVertical: 9, borderRadius: 9, alignItems: 'center' },
-  tabBtnActive:     { backgroundColor: C.primary },
-  tabText:          { color: C.textSec, fontSize: 13, fontWeight: '500' },
-  tabTextActive:    { color: '#fff', fontWeight: '600' },
-  dateRow:          { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8, gap: 8 },
-  dateRowLabel:     { color: C.textSec, fontSize: 13 },
-  dateBtn:          { backgroundColor: C.surfaceVar, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7 },
-  dateBtnText:      { color: '#fff', fontSize: 13 },
-  loadBtn:          { backgroundColor: C.primary, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 7 },
-  loadBtnText:      { color: '#fff', fontWeight: '600', fontSize: 13 },
-  tableCard:        { marginHorizontal: 16, backgroundColor: C.surface, borderRadius: 16, overflow: 'hidden', marginBottom: 12 },
-  tableRow:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10 },
-  tableHeader:      { backgroundColor: '#0e0e0e' },
-  rowEven:          { backgroundColor: C.surface },
-  rowOdd:           { backgroundColor: '#1a1a1a' },
-  tableCell:        { flex: 1 },
-  headerCell:       { color: C.textSec, fontSize: 12, fontWeight: '600' },
-  numCell:          { textAlign: 'right' },
-  cellText:         { color: '#fff', fontSize: 13 },
-  empty:            { textAlign: 'center', color: C.textSec, padding: 24, fontSize: 14 },
-  totalCard:        { marginHorizontal: 16, marginBottom: 24, backgroundColor: '#0d1f0d', borderRadius: 16, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  totalLabel:       { color: '#fff', fontSize: 16, fontWeight: '700' },
-  totalMilk:        { color: C.textSec, fontSize: 13, marginBottom: 4 },
-  totalAmount:      { color: C.success, fontSize: 22, fontWeight: '700', letterSpacing: -0.3 },
-  billControls:     { padding: 16 },
-  billControlLabel: { color: C.textSec, fontSize: 12, marginBottom: 6 },
-  pickerWrap:       { backgroundColor: C.surfaceVar, borderRadius: 10, marginBottom: 12, overflow: 'hidden' },
-  divider:          { height: 1, backgroundColor: C.surfaceVar, marginHorizontal: 16, marginBottom: 12 },
+  screen:      { flex: 1, backgroundColor: C.bg },
+
+  // Hero
+  hero:        { backgroundColor: C.blue, padding: 24, paddingTop: 20 },
+  heroDate:    { fontSize: 12, color: 'rgba(255,255,255,0.7)', fontWeight: '500' },
+  heroTitle:   { fontSize: 28, fontWeight: '800', color: '#fff', marginBottom: 16, letterSpacing: -0.5 },
+  heroStats:   { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 16, padding: 16 },
+  heroStat:    { flex: 1, alignItems: 'center' },
+  heroStatVal: { fontSize: 20, fontWeight: '800', color: '#fff' },
+  heroStatLbl: { fontSize: 11, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
+  heroDiv:     { width: 1, backgroundColor: 'rgba(255,255,255,0.3)' },
+
+  // Tabs
+  tabRow:      { flexDirection: 'row', margin: 16, backgroundColor: C.surface, borderRadius: 12, padding: 4, gap: 4 },
+  tabBtn:      { flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center' },
+  tabBtnActive:{ backgroundColor: C.white },
+  tabTxt:      { fontSize: 13, fontWeight: '600', color: C.textSec },
+  tabTxtActive:{ color: C.blue, fontWeight: '700' },
+
+  // Stat row
+  statRow:     { flexDirection: 'row', paddingHorizontal: 16, gap: 10, marginBottom: 16 },
+  statCard:    { flex: 1, backgroundColor: C.white, borderRadius: 14, padding: 14, borderTopWidth: 3, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
+  statVal:     { fontSize: 18, fontWeight: '800', color: C.textPri },
+  statLbl:     { fontSize: 11, color: C.textSec, marginTop: 2 },
+
+  // Table
+  table:       { marginHorizontal: 16, backgroundColor: C.white, borderRadius: 16, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
+  tableHead:   { flexDirection: 'row', backgroundColor: C.surfaceHigh, paddingVertical: 10, paddingHorizontal: 12 },
+  th:          { flex: 1, fontSize: 10, fontWeight: '700', color: C.textSec, letterSpacing: 0.5 },
+  tableRow:    { flexDirection: 'row', paddingVertical: 12, paddingHorizontal: 12, backgroundColor: C.white },
+  td:          { flex: 1, fontSize: 12, color: C.textSec },
+  empty:       { textAlign: 'center', color: C.textSec, padding: 24, fontSize: 14 },
+
+  // Bill
+  chipRow:     { paddingHorizontal: 16, paddingVertical: 8, gap: 8 },
+  chip:        { paddingVertical: 8, paddingHorizontal: 16, backgroundColor: C.surface, borderRadius: 100 },
+  chipActive:  { backgroundColor: C.blue },
+  chipTxt:     { fontSize: 13, color: C.textSec, fontWeight: '500' },
+  chipTxtActive:{ color: '#fff', fontWeight: '600' },
+  billSummary: { marginHorizontal: 16, backgroundColor: C.white, borderRadius: 16, padding: 16, marginBottom: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
+  billSamiti:  { fontSize: 18, fontWeight: '800', color: C.textPri },
+  billPeriod:  { fontSize: 12, color: C.textSec, marginTop: 2 },
+  billTotal:   { fontSize: 28, fontWeight: '800', color: C.success, marginTop: 8 },
 });

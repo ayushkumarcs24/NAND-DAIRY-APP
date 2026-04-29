@@ -219,7 +219,7 @@ const s = StyleSheet.create({
   empty:         { textAlign: 'center', color: C.textSec, marginTop: 80, fontSize: 15 },
   // Modal
   modalOverlay:  { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
-  modalCard:     { backgroundColor: '#1c1c1e', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 },
+  modalCard:     { backgroundColor: '#ffffff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 },
   modalTitle:    { color: '#fff', fontSize: 20, fontWeight: '700', marginBottom: 20, letterSpacing: -0.3 },
   inputLabel:    { color: C.textSec, fontSize: 12, marginBottom: 6, letterSpacing: 0.1 },
   inputField:    { backgroundColor: C.surfaceVar, borderRadius: 10, color: '#fff', fontSize: 15, paddingHorizontal: 14, height: 46, marginBottom: 14 },

@@ -1,0 +1,11 @@
+$kind: http-request
+url: "{{baseUrl}}/api/reports/bill?samiti_id={{samitiId}}&from_date={{fromDate}\
+  }&to_date={{today}}"
+method: GET
+headers:
+  Authorization: Bearer {{adminToken}}
+queryParams:
+  samiti_id: "{{samitiId}}"
+  from_date: "{{fromDate}}"
+  to_date: "{{today}}"
+order: 2000

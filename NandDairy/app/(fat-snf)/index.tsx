@@ -1,191 +1,227 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity,
-  StyleSheet, Animated, ActivityIndicator,
+  View, Text, TextInput, TouchableOpacity, FlatList,
+  StyleSheet, ActivityIndicator, ScrollView,
 } from 'react-native';
 import { Snackbar } from 'react-native-paper';
 import api from '../../services/api';
 import { C } from '../../constants/Theme';
 
 interface PendingEntry {
-  milk_entry_id: number; samiti_name: string; samiti_code: string;
-  shift: string; milk_quantity_liters: string; entry_date: string;
+  milk_entry_id: number; shift: string; milk_quantity_liters: string;
+  entry_date: string; samiti_name: string; samiti_code: string;
 }
 
 export default function FatSnfScreen() {
-  const [pending, setPending] = useState<PendingEntry[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [fat, setFat] = useState('');
-  const [snf, setSnf] = useState('');
-  const [rate, setRate] = useState('');
+  const [pending, setPending]       = useState<PendingEntry[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [current, setCurrent]       = useState<PendingEntry | null>(null);
+  const [fat, setFat]               = useState('');
+  const [snf, setSnf]               = useState('');
+  const [rate, setRate]             = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [snackMsg, setSnackMsg] = useState('');
+  const [snackMsg, setSnackMsg]     = useState('');
   const [snackError, setSnackError] = useState(false);
-  const slideAnim = useRef(new Animated.Value(0)).current;
 
-  const fetchPending = useCallback(async () => {
+  const fetchPending = async () => {
+    setLoading(true);
     try {
       const res = await api.get('/fat-snf/pending');
-      setPending(res.data); setCurrentIndex(0);
-    } catch { setSnackError(true); setSnackMsg('Failed to load pending entries'); }
-    finally { setLoading(false); }
-  }, []);
+      setPending(res.data);
+      if (res.data.length > 0) setCurrent(res.data[0]);
+    } catch { } finally { setLoading(false); }
+  };
 
-  useEffect(() => { fetchPending(); }, [fetchPending]);
+  useEffect(() => { fetchPending(); }, []);
 
-  const current = pending[currentIndex];
-  const quantity = current ? parseFloat(current.milk_quantity_liters) : 0;
-  const rateVal = parseFloat(rate) || 0;
-  const liveAmount = (quantity * rateVal).toFixed(2);
-  const progress = pending.length > 0 ? (currentIndex + 1) / pending.length : 0;
-
-  const slideToNext = () => {
-    Animated.sequence([
-      Animated.timing(slideAnim, { toValue: -400, duration: 200, useNativeDriver: true }),
-      Animated.timing(slideAnim, { toValue: 400, duration: 0, useNativeDriver: true }),
-      Animated.timing(slideAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
-    ]).start();
+  const payout = () => {
+    const qty  = parseFloat(current?.milk_quantity_liters || '0');
+    const r    = parseFloat(rate);
+    return isNaN(qty) || isNaN(r) ? '—' : `₹${(qty * r).toFixed(2)}`;
   };
 
   const handleSubmit = async () => {
-    if (!fat || !snf || !rate) { setSnackError(true); setSnackMsg('All fields required'); return; }
-    const fatVal = parseFloat(fat); const snfVal = parseFloat(snf);
-    if (fatVal < 0 || fatVal > 10) { setSnackError(true); setSnackMsg('FAT must be 0–10'); return; }
-    if (snfVal < 0 || snfVal > 15) { setSnackError(true); setSnackMsg('SNF must be 0–15'); return; }
+    if (!current) return;
+    const fv = parseFloat(fat), sv = parseFloat(snf), rv = parseFloat(rate);
+    if (isNaN(fv) || isNaN(sv) || isNaN(rv)) { setSnackError(true); setSnackMsg('Fill all three values'); return; }
     setSubmitting(true);
     try {
-      await api.post('/fat-snf', { milk_entry_id: current.milk_entry_id, fat_value: fatVal, snf_value: snfVal, rate_per_liter: rateVal });
-      setSnackError(false); setSnackMsg(`✅ Saved — ${current.samiti_name}`);
-      slideToNext(); setFat(''); setSnf(''); setRate('');
-      if (currentIndex < pending.length - 1) { setCurrentIndex(i => i + 1); }
-      else { await fetchPending(); }
+      await api.post('/fat-snf', { milk_entry_id: current.milk_entry_id, fat_value: fv, snf_value: sv, rate_per_liter: rv });
+      setSnackError(false); setSnackMsg(`✅ ${current.samiti_name} — submitted`);
+      setFat(''); setSnf(''); setRate('');
+      const next = pending.filter(p => p.milk_entry_id !== current.milk_entry_id);
+      setPending(next);
+      setCurrent(next[0] || null);
     } catch (e: any) {
-      setSnackError(true); setSnackMsg(e.response?.data?.error || 'Failed to submit');
+      setSnackError(true); setSnackMsg(e.response?.data?.error || 'Submission failed');
     } finally { setSubmitting(false); }
   };
 
-  if (loading) return <View style={s.center}><ActivityIndicator size="large" color={C.primary} /></View>;
+  const nextEntry = () => {
+    if (!pending.length) return;
+    const idx  = pending.findIndex(p => p.milk_entry_id === current?.milk_entry_id);
+    const next = pending[(idx + 1) % pending.length];
+    setCurrent(next); setFat(''); setSnf(''); setRate('');
+  };
 
-  if (pending.length === 0) return (
+  if (loading) return <View style={s.center}><ActivityIndicator color={C.coral} size="large" /></View>;
+
+  if (!current) return (
     <View style={s.center}>
-      <Text style={{ fontSize: 64 }}>🎉</Text>
-      <Text style={s.doneTitle}>All Done!</Text>
-      <Text style={s.doneSub}>No pending FAT/SNF entries.</Text>
-      <TouchableOpacity style={[s.primaryBtn, { marginTop: 24, paddingHorizontal: 32 }]} onPress={fetchPending}>
-        <Text style={s.primaryBtnText}>↻  Check Again</Text>
+      <Text style={s.doneEmoji}>🎉</Text>
+      <Text style={s.doneTitle}>All Entries Tested!</Text>
+      <Text style={s.doneSub}>No pending FAT/SNF entries</Text>
+      <TouchableOpacity style={s.refreshBtn} onPress={fetchPending}>
+        <Text style={s.refreshTxt}>Refresh</Text>
       </TouchableOpacity>
     </View>
   );
 
   return (
-    <View style={s.screen}>
-      {/* Progress */}
-      <View style={s.progressSection}>
-        <Text style={s.progressLabel}>{currentIndex + 1} of {pending.length} pending</Text>
-        <View style={s.progressTrack}>
-          <View style={[s.progressFill, { width: `${progress * 100}%` }]} />
-        </View>
+    <ScrollView style={s.screen} contentContainerStyle={{ paddingBottom: 48 }}>
+
+      {/* ── Progress header ── */}
+      <View style={s.progressBar}>
+        <View style={s.progressFill} />
       </View>
-
-      {/* Entry Card */}
-      <Animated.View style={{ transform: [{ translateX: slideAnim }] }}>
-        <View style={s.entryCard}>
-          <View style={s.cardHeader}>
-            <View style={{ flex: 1 }}>
-              <Text style={s.samitiName}>{current.samiti_name}</Text>
-              <Text style={s.entryDate}>{new Date(current.entry_date).toLocaleDateString('en-IN')}</Text>
-            </View>
-            <View style={s.codeBadge}><Text style={s.codeText}>{current.samiti_code}</Text></View>
-          </View>
-          <View style={s.badgeRow}>
-            <View style={[s.shiftBadge, { backgroundColor: current.shift === 'morning' ? C.morning : C.evening }]}>
-              <Text style={s.badgeText}>{current.shift === 'morning' ? '🌅 Morning' : '🌆 Evening'}</Text>
-            </View>
-            <View style={s.milkBadge}>
-              <Text style={s.milkBadgeText}>🥛 {parseFloat(current.milk_quantity_liters).toFixed(1)} L</Text>
-            </View>
-          </View>
-        </View>
-      </Animated.View>
-
-      {/* Inputs */}
-      <View style={s.inputs}>
-        <View style={s.inputRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={s.inputLabel}>FAT %</Text>
-            <View style={s.inputWrap}>
-              <TextInput style={s.input} value={fat} onChangeText={setFat} keyboardType="decimal-pad" placeholder="0.0" placeholderTextColor={C.textTer} />
-              <Text style={s.suffix}>%</Text>
-            </View>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={s.inputLabel}>SNF %</Text>
-            <View style={s.inputWrap}>
-              <TextInput style={s.input} value={snf} onChangeText={setSnf} keyboardType="decimal-pad" placeholder="0.0" placeholderTextColor={C.textTer} />
-              <Text style={s.suffix}>%</Text>
-            </View>
-          </View>
-        </View>
-
-        <Text style={s.inputLabel}>Rate per Liter (₹)</Text>
-        <View style={s.inputWrap}>
-          <Text style={s.prefix}>₹</Text>
-          <TextInput style={[s.input, { flex: 1 }]} value={rate} onChangeText={setRate} keyboardType="decimal-pad" placeholder="0.00" placeholderTextColor={C.textTer} />
-        </View>
-
-        {rateVal > 0 && (
-          <View style={s.amountCard}>
-            <Text style={s.amountLabel}>Estimated Amount</Text>
-            <Text style={s.amountValue}>₹{liveAmount}</Text>
-          </View>
-        )}
-
-        <TouchableOpacity style={[s.primaryBtn, { marginTop: 12 }, submitting && { opacity: 0.7 }]} onPress={handleSubmit} disabled={submitting}>
-          {submitting ? <ActivityIndicator color="#fff" size="small" /> : <Text style={s.primaryBtnText}>Submit & Next  →</Text>}
+      <View style={s.countRow}>
+        <Text style={s.countTxt}>{pending.length} remaining</Text>
+        <TouchableOpacity onPress={nextEntry}>
+          <Text style={s.skipTxt}>Skip →</Text>
         </TouchableOpacity>
       </View>
 
-      <Snackbar
-        visible={!!snackMsg} onDismiss={() => setSnackMsg('')} duration={3000}
-        style={{ backgroundColor: snackError ? '#3a1212' : '#0d2a0d', margin: 16, borderRadius: 12 }}
-      >
-        <Text style={{ color: snackError ? C.error : C.success }}>{snackMsg}</Text>
+      {/* ── Current entry card ── */}
+      <View style={s.entryCard}>
+        <View style={s.coralAccent} />
+        <View style={s.entryTop}>
+          <View>
+            <Text style={s.samitiName}>{current.samiti_name}</Text>
+            <Text style={s.entryMeta}>
+              #{current.samiti_code} · {current.shift === 'morning' ? '🌅 Morning' : '🌙 Evening'} · {new Date(current.entry_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+            </Text>
+          </View>
+          <View style={s.qtyBadge}>
+            <Text style={s.qtyTxt}>{parseFloat(current.milk_quantity_liters).toFixed(1)}</Text>
+            <Text style={s.qtyUnit}>L</Text>
+          </View>
+        </View>
+
+        <View style={s.divider} />
+
+        {/* FAT input */}
+        <Text style={s.fieldLabel}>FAT VALUE</Text>
+        <TextInput style={s.fieldInput} value={fat} onChangeText={setFat} keyboardType="decimal-pad" placeholder="0.0 – 10.0" placeholderTextColor={C.textTer} />
+        <View style={s.presetRow}>
+          {['3.5', '4.0', '4.5', '5.0'].map(v => (
+            <TouchableOpacity key={v} style={s.preset} onPress={() => setFat(v)}>
+              <Text style={s.presetTxt}>{v}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* SNF input */}
+        <Text style={[s.fieldLabel, { marginTop: 12 }]}>SNF VALUE</Text>
+        <TextInput style={s.fieldInput} value={snf} onChangeText={setSnf} keyboardType="decimal-pad" placeholder="0.0 – 15.0" placeholderTextColor={C.textTer} />
+        <View style={s.presetRow}>
+          {['8.0', '8.5', '9.0', '9.5'].map(v => (
+            <TouchableOpacity key={v} style={s.preset} onPress={() => setSnf(v)}>
+              <Text style={s.presetTxt}>{v}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Rate input */}
+        <Text style={[s.fieldLabel, { marginTop: 12 }]}>RATE / LITER (₹)</Text>
+        <TextInput style={s.fieldInput} value={rate} onChangeText={setRate} keyboardType="decimal-pad" placeholder="e.g. 32.00" placeholderTextColor={C.textTer} />
+        <View style={s.presetRow}>
+          {['28', '30', '32', '35'].map(v => (
+            <TouchableOpacity key={v} style={s.preset} onPress={() => setRate(v)}>
+              <Text style={s.presetTxt}>₹{v}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Payout preview */}
+        <View style={s.payoutCard}>
+          <Text style={s.payoutLabel}>ESTIMATED PAYOUT</Text>
+          <Text style={s.payoutValue}>{payout()}</Text>
+        </View>
+
+        <TouchableOpacity style={[s.submitBtn, submitting && { opacity: 0.6 }]} onPress={handleSubmit} disabled={submitting}>
+          {submitting ? <ActivityIndicator color="#fff" size="small" /> : <Text style={s.submitTxt}>Submit & Next →</Text>}
+        </TouchableOpacity>
+      </View>
+
+      {/* ── Queue list ── */}
+      {pending.length > 1 && (
+        <>
+          <Text style={s.queueLabel}>QUEUE ({pending.length - 1} more)</Text>
+          {pending.filter(p => p.milk_entry_id !== current.milk_entry_id).slice(0, 4).map(p => (
+            <TouchableOpacity key={p.milk_entry_id} style={s.queueItem} onPress={() => { setCurrent(p); setFat(''); setSnf(''); setRate(''); }}>
+              <Text style={s.queueName}>{p.samiti_name}</Text>
+              <Text style={s.queueMeta}>{parseFloat(p.milk_quantity_liters).toFixed(1)}L · {p.shift}</Text>
+            </TouchableOpacity>
+          ))}
+        </>
+      )}
+
+      <Snackbar visible={!!snackMsg} onDismiss={() => setSnackMsg('')} duration={3500}
+        style={{ backgroundColor: snackError ? C.errorBg : C.successBg, margin: 16, borderRadius: 12 }}>
+        <Text style={{ color: snackError ? C.error : C.success, fontWeight: '500' }}>{snackMsg}</Text>
       </Snackbar>
-    </View>
+    </ScrollView>
   );
 }
 
 const s = StyleSheet.create({
-  screen:         { flex: 1, backgroundColor: C.bg, padding: 16 },
-  center:         { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: C.bg, padding: 24 },
-  doneTitle:      { color: '#fff', fontSize: 24, fontWeight: '700', marginTop: 12, letterSpacing: -0.3 },
-  doneSub:        { color: C.textSec, fontSize: 15, marginTop: 8, textAlign: 'center' },
-  progressSection:{ marginBottom: 16 },
-  progressLabel:  { color: C.textSec, fontSize: 12, marginBottom: 8 },
-  progressTrack:  { height: 8, backgroundColor: C.surfaceVar, borderRadius: 4, overflow: 'hidden' },
-  progressFill:   { height: '100%', backgroundColor: C.primary, borderRadius: 4 },
-  entryCard:      { backgroundColor: C.surface, borderRadius: 16, padding: 16, marginBottom: 20 },
-  cardHeader:     { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12 },
-  samitiName:     { color: '#fff', fontSize: 20, fontWeight: '700', letterSpacing: -0.3 },
-  entryDate:      { color: C.textSec, fontSize: 12, marginTop: 4 },
-  codeBadge:      { backgroundColor: C.primary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 },
-  codeText:       { color: '#fff', fontWeight: '700', fontSize: 20, letterSpacing: 2 },
-  badgeRow:       { flexDirection: 'row', gap: 8 },
-  shiftBadge:     { borderRadius: 6, paddingHorizontal: 10, paddingVertical: 5 },
-  milkBadge:      { backgroundColor: '#1c2e1c', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 5 },
-  badgeText:      { color: '#fff', fontSize: 12, fontWeight: '600' },
-  milkBadgeText:  { color: C.success, fontSize: 12, fontWeight: '600' },
-  inputs:         {},
-  inputRow:       { flexDirection: 'row', gap: 12, marginBottom: 14 },
-  inputLabel:     { color: C.textSec, fontSize: 12, marginBottom: 6 },
-  inputWrap:      { flexDirection: 'row', alignItems: 'center', backgroundColor: C.surfaceVar, borderRadius: 10, paddingHorizontal: 12, height: 46, marginBottom: 2 },
-  input:          { color: '#fff', fontSize: 15, flex: 1 },
-  suffix:         { color: C.textSec, fontSize: 15, marginLeft: 4 },
-  prefix:         { color: C.textSec, fontSize: 15, marginRight: 4 },
-  amountCard:     { backgroundColor: '#0d1f0d', borderRadius: 12, padding: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 },
-  amountLabel:    { color: 'rgba(255,255,255,0.7)', fontSize: 14 },
-  amountValue:    { color: C.success, fontSize: 26, fontWeight: '700', letterSpacing: -0.3 },
-  primaryBtn:     { backgroundColor: C.primary, borderRadius: 10, height: 48, justifyContent: 'center', alignItems: 'center' },
-  primaryBtnText: { color: '#fff', fontSize: 15, fontWeight: '600', letterSpacing: -0.2 },
+  screen:       { flex: 1, backgroundColor: C.bg },
+  center:       { flex: 1, backgroundColor: C.bg, justifyContent: 'center', alignItems: 'center', padding: 32 },
+
+  // Progress
+  progressBar:  { height: 4, backgroundColor: C.border, marginHorizontal: 16, marginTop: 16, borderRadius: 2 },
+  progressFill: { height: 4, backgroundColor: C.coral, width: '40%', borderRadius: 2 },
+  countRow:     { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 8 },
+  countTxt:     { fontSize: 13, color: C.textSec, fontWeight: '500' },
+  skipTxt:      { fontSize: 13, color: C.coral, fontWeight: '700' },
+
+  // Entry card
+  entryCard:    { marginHorizontal: 16, backgroundColor: C.white, borderRadius: 20, padding: 20, shadowColor: '#000', shadowOpacity: 0.07, shadowRadius: 14, elevation: 3, overflow: 'hidden' },
+  coralAccent:  { position: 'absolute', top: 0, left: 0, right: 0, height: 4, backgroundColor: C.coral },
+  entryTop:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: 8 },
+  samitiName:   { fontSize: 20, fontWeight: '800', color: C.textPri },
+  entryMeta:    { fontSize: 12, color: C.textSec, marginTop: 4 },
+  qtyBadge:     { backgroundColor: '#FBE9E7', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10, alignItems: 'center' },
+  qtyTxt:       { fontSize: 22, fontWeight: '800', color: C.coral },
+  qtyUnit:      { fontSize: 11, color: C.coral, fontWeight: '600' },
+  divider:      { height: 1, backgroundColor: C.border, marginVertical: 16 },
+
+  // Fields
+  fieldLabel:   { fontSize: 10, fontWeight: '700', color: C.textSec, letterSpacing: 1, marginBottom: 6 },
+  fieldInput:   { height: 52, backgroundColor: C.inputFill, borderRadius: 12, paddingHorizontal: 16, color: C.textPri, fontSize: 18, fontWeight: '700' },
+  presetRow:    { flexDirection: 'row', gap: 8, marginTop: 8 },
+  preset:       { flex: 1, backgroundColor: '#FBE9E7', borderRadius: 100, paddingVertical: 7, alignItems: 'center' },
+  presetTxt:    { color: C.coral, fontSize: 12, fontWeight: '700' },
+
+  // Payout
+  payoutCard:   { backgroundColor: C.surfaceLow, borderRadius: 14, padding: 16, marginTop: 16, marginBottom: 16, alignItems: 'center' },
+  payoutLabel:  { fontSize: 10, fontWeight: '700', color: C.textSec, letterSpacing: 1 },
+  payoutValue:  { fontSize: 28, fontWeight: '800', color: C.coral, marginTop: 4 },
+
+  // Submit
+  submitBtn:    { height: 56, backgroundColor: C.coral, borderRadius: 14, justifyContent: 'center', alignItems: 'center', shadowColor: C.coral, shadowOpacity: 0.3, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 },
+  submitTxt:    { color: '#fff', fontSize: 16, fontWeight: '700' },
+
+  // Queue
+  queueLabel:   { fontSize: 10, fontWeight: '700', color: C.textSec, letterSpacing: 1, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 8 },
+  queueItem:    { backgroundColor: C.white, marginHorizontal: 16, marginBottom: 8, borderRadius: 14, padding: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, elevation: 1 },
+  queueName:    { fontSize: 14, fontWeight: '600', color: C.textPri },
+  queueMeta:    { fontSize: 12, color: C.textSec },
+
+  // Done state
+  doneEmoji:    { fontSize: 56, marginBottom: 16 },
+  doneTitle:    { fontSize: 22, fontWeight: '800', color: C.textPri, marginBottom: 8 },
+  doneSub:      { fontSize: 14, color: C.textSec, marginBottom: 24 },
+  refreshBtn:   { backgroundColor: C.coral, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 32 },
+  refreshTxt:   { color: '#fff', fontSize: 15, fontWeight: '700' },
 });
