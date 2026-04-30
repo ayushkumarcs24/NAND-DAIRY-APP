@@ -4,20 +4,20 @@
     "slug": "nanddairy",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/images/nand-dairy-logo.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": false,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/images/nand-dairy-logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#1E88E5"
+      "backgroundColor": "#ffffff"
     },
     "scheme": "nanddairy",
     "android": {
       "package": "com.nanddairy.app",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#1E88E5"
+        "foregroundImage": "./assets/images/nand-dairy-logo.png",
+        "backgroundColor": "#ffffff"
       }
     },
     "ios": {
@@ -27,7 +27,7 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/icon.png"
+      "favicon": "./assets/images/nand-dairy-logo.png"
     },
     "plugins": [
       "expo-router",
